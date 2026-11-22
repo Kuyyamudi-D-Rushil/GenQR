@@ -178,3 +178,44 @@ def test_cross_user_delete_prevention(app):
     # Ensure record is still intact
     with app.app_context():
         assert db.session.get(QRCode, record_id) is not None
+
+
+def test_dashboard_get_creates_no_qr_records(auth_client, app):
+    """Verify loading or refreshing the dashboard produces zero database writes."""
+    client, user_id = auth_client
+
+    with app.app_context():
+        initial_user_records = db.session.query(QRCode).filter_by(user_id=user_id).count()
+        initial_total_records = db.session.query(QRCode).count()
+
+    # Load and refresh /dashboard repeatedly
+    for _ in range(5):
+        resp = client.get("/dashboard")
+        assert resp.status_code == 200
+
+    # Verify no new records were created
+    with app.app_context():
+        current_user_records = db.session.query(QRCode).filter_by(user_id=user_id).count()
+        current_total_records = db.session.query(QRCode).count()
+        assert current_user_records == initial_user_records
+        assert current_total_records == initial_total_records
+
+    # Also verify landing page GET and /api/preview do not save any records
+    resp_landing = client.get("/")
+    assert resp_landing.status_code == 200
+
+    resp_preview = client.post("/api/preview", json={
+        "content": "https://example.com/stateless-preview",
+        "qr_type": "url",
+        "foreground": "#000000",
+        "background": "#FFFFFF"
+    })
+    assert resp_preview.status_code == 200
+    assert resp_preview.mimetype == "image/png"
+
+    with app.app_context():
+        final_user_records = db.session.query(QRCode).filter_by(user_id=user_id).count()
+        final_total_records = db.session.query(QRCode).count()
+        assert final_user_records == initial_user_records
+        assert final_total_records == initial_total_records
+

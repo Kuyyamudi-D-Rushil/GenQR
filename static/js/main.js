@@ -189,7 +189,11 @@ function initDashboard() {
                 // Update Preview image & info safely using textContent
                 if (previewImg) {
                     previewImg.src = activeBlobUrl;
-                    previewImg.classList.remove("opacity-25");
+                    previewImg.classList.remove("opacity-25", "d-none");
+                }
+                const previewEmptyPlaceholder = document.getElementById("previewEmptyPlaceholder");
+                if (previewEmptyPlaceholder) {
+                    previewEmptyPlaceholder.classList.add("d-none");
                 }
                 if (previewTitleDisplay) previewTitleDisplay.textContent = title;
                 if (previewContentDisplay) previewContentDisplay.textContent = content;
@@ -225,11 +229,6 @@ function initDashboard() {
                 }
             }
         });
-    }
-
-    // Auto-generate initial preview on page load if inputs are present
-    if (contentInput && contentInput.value) {
-        form.dispatchEvent(new Event("submit"));
     }
 
     // Attach delete handlers
