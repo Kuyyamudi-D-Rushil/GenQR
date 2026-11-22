@@ -27,9 +27,12 @@ class Config:
     SECRET_KEY = _secret_key
 
     # Render uses 'postgres://' which SQLAlchemy 1.4+ deprecated in favor of 'postgresql://'
+    # SQLAlchemy 2.0 with psycopg (v3) uses 'postgresql+psycopg://'
     raw_db_url = os.getenv("DATABASE_URL", "sqlite:///qr_generator.db")
     if raw_db_url.startswith("postgres://"):
-        raw_db_url = raw_db_url.replace("postgres://", "postgresql://", 1)
+        raw_db_url = raw_db_url.replace("postgres://", "postgresql+psycopg://", 1)
+    elif raw_db_url.startswith("postgresql://"):
+        raw_db_url = raw_db_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
     SQLALCHEMY_DATABASE_URI = raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False

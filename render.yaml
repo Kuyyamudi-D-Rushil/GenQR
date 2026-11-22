@@ -10,6 +10,8 @@ services:
     healthCheckPath: /healthz
     autoDeploy: true
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
       - key: FLASK_ENV
         value: production
       - key: FLASK_DEBUG
