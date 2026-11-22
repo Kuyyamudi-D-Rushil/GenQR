@@ -8,11 +8,11 @@
         <div class="col-md-6 col-lg-4">
             <div class="card p-4 p-sm-4 shadow-sm">
                 <div class="text-center mb-4">
-                    <div class="nav-brand-icon mx-auto mb-3" style="width: 40px; height: 40px; font-size: 1.25rem;">
+                    <div class="nav-brand-icon mx-auto mb-3" style="width: 44px; height: 44px; font-size: 1.35rem;">
                         <i class="bi bi-qr-code"></i>
                     </div>
-                    <h2 class="h5 fw-bold text-dark mb-1">Sign in to CloudQR</h2>
-                    <p class="text-secondary small mb-0">Enter your credentials to access your dashboard</p>
+                    <h2 class="h4 fw-bold mb-1" style="color: var(--text-primary);">Sign in to CloudQR</h2>
+                    <p class="text-secondary small mb-0">Enter your credentials to access your cloud dashboard</p>
                 </div>
 
                 <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
@@ -27,7 +27,7 @@
                         <label for="password" class="form-label">Password</label>
                         <div class="input-group">
                             <input type="password" class="form-control border-end-0" id="password" name="password" placeholder="••••••••" required>
-                            <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePasswordBtn" style="border-color: #E2E8F0;">
+                            <button class="btn btn-secondary-subtle border-start-0" type="button" id="togglePasswordBtn">
                                 <i class="bi bi-eye text-secondary" id="togglePasswordIcon"></i>
                             </button>
                         </div>
@@ -42,13 +42,13 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                    <button type="submit" class="btn btn-primary w-100 mb-3 py-2 fw-semibold">
                         Sign in
                     </button>
 
                     <div class="text-center">
                         <span class="text-secondary small">Don't have an account? </span>
-                        <a href="{{ url_for('auth.register') }}" class="text-primary fw-medium small text-decoration-none">Sign up</a>
+                        <a href="{{ url_for('auth.register') }}" class="fw-semibold small">Sign up</a>
                     </div>
                 </form>
             </div>

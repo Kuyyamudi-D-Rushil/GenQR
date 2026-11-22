@@ -1,7 +1,11 @@
 /**
- * CloudQR Client Engine
- * Clean SaaS Interface: Asynchronous QR Generation, Cloud Persistence,
- * History Management & XSS-Safe Modals (Black & White Standard)
+ * CloudQR Commercial SaaS Client Engine
+ * Features:
+ * - Persistent Light/Dark Theme Switcher (with smooth transitions)
+ * - 4 Dynamic Interactive QR Type Selectors (URL, Text, Email, Phone)
+ * - Dedicated Generator Workspace with Live B&W Canvas
+ * - Dashboard Overview & PostgreSQL Activity Distribution
+ * - XSS-Safe QR History Management & Deletion Engine
  */
 
 // Helper to extract CSRF Token from meta tag
@@ -15,99 +19,177 @@ let activeBlobUrl = null;
 let activePreviewBlobUrl = null;
 
 /**
- * Configure dynamic QR type inputs (placeholders, labels, helpers)
+ * 1. THEME TOGGLE SYSTEM (Light & Dark with LocalStorage Persistence)
+ */
+function initThemeToggle() {
+    const toggleBtns = document.querySelectorAll(".theme-toggle-btn");
+    
+    function applyTheme(theme) {
+        document.documentElement.setAttribute("data-theme", theme);
+        localStorage.setItem("cloudqr_theme", theme);
+        
+        toggleBtns.forEach(btn => {
+            if (theme === "dark") {
+                btn.innerHTML = '<i class="bi bi-sun-fill text-warning"></i>';
+                btn.setAttribute("title", "Switch to Light Mode");
+                btn.setAttribute("aria-label", "Switch to Light Mode");
+            } else {
+                btn.innerHTML = '<i class="bi bi-moon-stars-fill text-secondary"></i>';
+                btn.setAttribute("title", "Switch to Dark Mode");
+                btn.setAttribute("aria-label", "Switch to Dark Mode");
+            }
+        });
+    }
+
+    // Determine current theme
+    const currentTheme = document.documentElement.getAttribute("data-theme") || 
+                         localStorage.getItem("cloudqr_theme") || 
+                         (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    
+    applyTheme(currentTheme);
+
+    toggleBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            const active = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+            applyTheme(active);
+        });
+    });
+}
+
+/**
+ * 2. DYNAMIC QR TYPE CONFIGURATOR
+ * Updates form labels, placeholders, input types, and helpful hints
  */
 function updateTypeInputConfig(type, elements) {
     const { label, input, helper } = elements;
     if (!input) return;
 
     if (type === "url") {
-        if (label) label.textContent = "TARGET WEB URL";
-        input.placeholder = "https://www.google.com";
-        if (helper) helper.textContent = "Destination website link. Include a valid domain (e.g. https://www.google.com).";
+        if (label) label.textContent = "Website URL";
+        input.placeholder = "https://example.com";
+        if (helper) helper.textContent = "Target destination web address. Include valid domain (e.g. https://www.google.com).";
     } else if (type === "text") {
-        if (label) label.textContent = "PLAIN TEXT CONTENT";
-        input.placeholder = "Enter any message, memo, or raw data...";
-        if (helper) helper.textContent = "Standard text information encoded into the QR matrix (up to 2048 bytes).";
+        if (label) label.textContent = "Your Text";
+        input.placeholder = "Enter the text you want to encode...";
+        if (helper) helper.textContent = "Plain text memos, instructions, or raw data (up to 2048 bytes).";
     } else if (type === "email") {
-        if (label) label.textContent = "RECIPIENT EMAIL ADDRESS";
-        input.placeholder = "contact@company.com";
-        if (helper) helper.textContent = "Email address. When scanned, opens standard email composer.";
+        if (label) label.textContent = "Email Address";
+        input.placeholder = "user@example.com";
+        if (helper) helper.textContent = "Contact email. Encodes into a standardized mailto: payload.";
     } else if (type === "phone") {
-        if (label) label.textContent = "PHONE NUMBER";
-        input.placeholder = "+1 555-123-4567";
-        if (helper) helper.textContent = "Contact phone number formatted for one-touch dialing (7 to 15 digits).";
+        if (label) label.textContent = "Phone Number";
+        input.placeholder = "+91 9876543210";
+        if (helper) helper.textContent = "Phone number formatted for one-touch dialing (7 to 15 digits).";
     }
 }
 
 /**
- * Dashboard & Studio QR Generator Initialization
+ * 3. DEDICATED QR GENERATOR WORKSPACE INITIALIZATION (/generate)
  */
-function initDashboard() {
-    const form = document.getElementById("dashboardGenerateForm");
+function initGeneratorWorkspace() {
+    const form = document.getElementById("generatorWorkspaceForm") || document.getElementById("dashboardGenerateForm");
     const titleInput = document.getElementById("qrTitle");
     const contentInput = document.getElementById("qrContent");
     const contentLabel = document.getElementById("qrContentLabel");
     const contentHelper = document.getElementById("qrContentHelper");
 
     const previewImg = document.getElementById("qrPreview");
+    const previewCanvas = document.getElementById("qrPreviewCanvas");
     const previewSpinner = document.getElementById("renderSpinner");
     const previewStatus = document.getElementById("previewStatusBadge");
     const previewTitleDisplay = document.getElementById("previewTitleDisplay");
     const previewContentDisplay = document.getElementById("previewContentDisplay");
+    const previewTypeBadge = document.getElementById("previewTypeBadge");
+    const emptyPlaceholder = document.getElementById("previewEmptyPlaceholder");
     const downloadBtn = document.getElementById("downloadBtn");
     const copyBtn = document.getElementById("copyContentBtn");
     const generateSubmitBtn = document.getElementById("generateSubmitBtn");
 
-    // QR Type segmented radio change handler
-    document.querySelectorAll('input[name="qrType"]').forEach(radio => {
-        radio.addEventListener("change", (e) => {
-            updateTypeInputConfig(e.target.value, {
-                label: contentLabel,
-                input: contentInput,
-                helper: contentHelper
-            });
+    const typeCards = document.querySelectorAll(".qr-type-card");
+
+    // Function to select QR type
+    function selectQRType(typeVal) {
+        typeCards.forEach(card => {
+            const radio = card.querySelector('input[type="radio"]');
+            if (card.getAttribute("data-type") === typeVal) {
+                card.classList.add("active");
+                if (radio) radio.checked = true;
+            } else {
+                card.classList.remove("active");
+                if (radio) radio.checked = false;
+            }
+        });
+
+        if (previewTypeBadge) {
+            previewTypeBadge.textContent = typeVal.toUpperCase();
+            previewTypeBadge.className = `badge badge-${typeVal}`;
+        }
+
+        updateTypeInputConfig(typeVal, {
+            label: contentLabel,
+            input: contentInput,
+            helper: contentHelper
+        });
+    }
+
+    // Attach click listeners to 4 interactive QR type cards
+    typeCards.forEach(card => {
+        card.addEventListener("click", () => {
+            const typeVal = card.getAttribute("data-type");
+            selectQRType(typeVal);
+            if (contentInput) contentInput.focus();
         });
     });
 
-    // Copy content button
+    // Check URL parameters for preset type (e.g. from Dashboard quick action cards)
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialType = urlParams.get("type");
+    if (initialType && ["url", "text", "email", "phone"].includes(initialType.toLowerCase())) {
+        selectQRType(initialType.toLowerCase());
+    }
+
+    // Copy Content button interaction
     if (copyBtn && contentInput) {
         copyBtn.addEventListener("click", () => {
-            navigator.clipboard.writeText(contentInput.value).then(() => {
+            const textToCopy = contentInput.value.trim();
+            if (!textToCopy) return;
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
                 const origHtml = copyBtn.innerHTML;
-                copyBtn.innerHTML = '<i class="bi bi-check2 text-success"></i>';
-                setTimeout(() => { copyBtn.innerHTML = origHtml; }, 1800);
+                copyBtn.innerHTML = '<i class="bi bi-check2 text-success me-1"></i> Copied!';
+                copyBtn.classList.add("btn-outline-success");
+                setTimeout(() => {
+                    copyBtn.innerHTML = origHtml;
+                    copyBtn.classList.remove("btn-outline-success");
+                }, 2000);
             });
         });
     }
 
-    // Live update preview info on typing
-    if (contentInput && previewContentDisplay) {
-        contentInput.addEventListener("input", () => {
-            const val = contentInput.value.trim();
-            previewContentDisplay.textContent = val || "Enter URL or text content above";
-        });
-    }
-
+    // Live typing title & content update on right panel
     if (titleInput && previewTitleDisplay) {
         titleInput.addEventListener("input", () => {
-            const val = titleInput.value.trim();
-            previewTitleDisplay.textContent = val || "New QR Code";
+            previewTitleDisplay.textContent = titleInput.value.trim() || "My QR Code";
         });
     }
 
-    // Submit handler: Generate and Save to Cloud (Strictly Black & White)
+    if (contentInput && previewContentDisplay) {
+        contentInput.addEventListener("input", () => {
+            previewContentDisplay.textContent = contentInput.value.trim() || "Enter your information on the left...";
+        });
+    }
+
+    // Generator Form Submit Handler (Strictly Black & White)
     if (form) {
         form.addEventListener("submit", async function(e) {
             e.preventDefault();
 
-            const selectedTypeRadio = document.querySelector('input[name="qrType"]:checked');
-            const qrType = selectedTypeRadio ? selectedTypeRadio.value : "url";
+            const activeCard = document.querySelector(".qr-type-card.active");
+            const qrType = activeCard ? activeCard.getAttribute("data-type") : "url";
             let title = (titleInput ? titleInput.value : "").trim();
             let content = (contentInput ? contentInput.value : "").trim();
 
-            // Intelligent Safety Correction:
-            // If user entered a URL into the title field and left content empty or default
+            // Intelligent Safety Correction: URL in title with empty content
             if (!content && title) {
                 content = title;
                 title = "My QR Code";
@@ -135,6 +217,7 @@ function initDashboard() {
             // UI Loading state
             if (previewSpinner) previewSpinner.classList.remove("d-none");
             if (previewImg) previewImg.classList.add("opacity-25");
+            if (emptyPlaceholder) emptyPlaceholder.classList.add("d-none");
             if (previewStatus) {
                 previewStatus.textContent = "Generating...";
                 previewStatus.className = "badge bg-warning-subtle text-warning";
@@ -161,6 +244,9 @@ function initDashboard() {
                 if (!response.ok) {
                     const errData = await response.json().catch(() => ({}));
                     alert(errData.error || `QR Generation error (${response.status})`);
+                    if (emptyPlaceholder && !previewImg.src) {
+                        emptyPlaceholder.classList.remove("d-none");
+                    }
                     return;
                 }
 
@@ -172,19 +258,21 @@ function initDashboard() {
                 const imageBlob = await response.blob();
                 activeBlobUrl = URL.createObjectURL(imageBlob);
 
-                // Update Preview image & info safely
+                // Update Preview image & info
                 if (previewImg) {
                     previewImg.src = activeBlobUrl;
                     previewImg.classList.remove("opacity-25", "d-none");
                 }
-                const previewEmptyPlaceholder = document.getElementById("previewEmptyPlaceholder");
-                if (previewEmptyPlaceholder) {
-                    previewEmptyPlaceholder.classList.add("d-none");
+                if (previewCanvas) {
+                    previewCanvas.classList.remove("d-none");
+                }
+                if (emptyPlaceholder) {
+                    emptyPlaceholder.classList.add("d-none");
                 }
                 if (previewTitleDisplay) previewTitleDisplay.textContent = title;
                 if (previewContentDisplay) previewContentDisplay.textContent = content;
 
-                // Update Download link
+                // Configure Download link
                 if (downloadBtn) {
                     downloadBtn.href = activeBlobUrl;
                     const cleanFileName = title.replace(/[^\w\-_\. ]/g, "_").trim().replace(/ +/g, "_");
@@ -192,23 +280,20 @@ function initDashboard() {
                     downloadBtn.classList.remove("disabled");
                 }
 
+                if (copyBtn) {
+                    copyBtn.classList.remove("disabled");
+                }
+
                 if (previewStatus) {
                     previewStatus.textContent = "Saved to Cloud";
                     previewStatus.className = "badge bg-success-subtle text-success";
-                }
-
-                // Reload smoothly if on dashboard to show in recent table
-                const newQrId = response.headers.get("X-QR-ID");
-                if (newQrId && document.getElementById("recentTableBody")) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1200);
                 }
             } catch (err) {
                 console.error("Generate error:", err);
                 alert("Failed to communicate with cloud backend. Please check network connection.");
             } finally {
                 if (previewSpinner) previewSpinner.classList.add("d-none");
+                if (previewImg) previewImg.classList.remove("opacity-25");
                 if (generateSubmitBtn) {
                     generateSubmitBtn.disabled = false;
                     generateSubmitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Generate & Save to Cloud';
@@ -216,13 +301,45 @@ function initDashboard() {
             }
         });
     }
-
-    // Attach delete handlers
-    attachDeleteHandlers();
 }
 
 /**
- * Public Landing Page Preview Sandbox (Stateless, Black & White)
+ * 4. DASHBOARD OVERVIEW INITIALIZATION (/dashboard)
+ */
+function initDashboardOverview() {
+    // Delete handlers for recent records table
+    attachDeleteHandlers();
+
+    // Calculate dynamic distribution progress bar if data attributes exist
+    const distContainer = document.getElementById("qrTypeDistribution");
+    if (distContainer) {
+        const total = parseInt(distContainer.getAttribute("data-total") || "0", 10);
+        const urlCount = parseInt(distContainer.getAttribute("data-url") || "0", 10);
+        const textCount = parseInt(distContainer.getAttribute("data-text") || "0", 10);
+        const emailCount = parseInt(distContainer.getAttribute("data-email") || "0", 10);
+        const phoneCount = parseInt(distContainer.getAttribute("data-phone") || "0", 10);
+
+        if (total > 0) {
+            const urlPct = Math.round((urlCount / total) * 100);
+            const textPct = Math.round((textCount / total) * 100);
+            const emailPct = Math.round((emailCount / total) * 100);
+            const phonePct = 100 - (urlPct + textPct + emailPct);
+
+            const segUrl = document.getElementById("distSegUrl");
+            const segText = document.getElementById("distSegText");
+            const segEmail = document.getElementById("distSegEmail");
+            const segPhone = document.getElementById("distSegPhone");
+
+            if (segUrl) segUrl.style.width = `${urlPct}%`;
+            if (segText) segText.style.width = `${textPct}%`;
+            if (segEmail) segEmail.style.width = `${emailPct}%`;
+            if (segPhone) segPhone.style.width = `${phonePct}%`;
+        }
+    }
+}
+
+/**
+ * 5. PUBLIC LANDING PAGE PREVIEW SANDBOX (/)
  */
 function initLandingPreview() {
     const previewInput = document.getElementById("previewContent");
@@ -277,19 +394,19 @@ function initLandingPreview() {
                 if (downloadBtn) {
                     downloadBtn.href = activePreviewBlobUrl;
                     downloadBtn.download = "cloud_qr_preview.png";
+                    downloadBtn.classList.remove("disabled");
                 }
             } else {
                 const err = await response.json().catch(() => ({}));
                 if (response.status === 429) {
                     alert(err.error || "Rate limit reached. Please wait a moment.");
-                } else if (err.error) {
-                    alert(err.error);
                 }
             }
         } catch (err) {
             console.error("Preview render failed", err);
         } finally {
             if (previewSpinner) previewSpinner.classList.add("d-none");
+            if (previewImg) previewImg.classList.remove("opacity-25");
         }
     }
 
@@ -305,7 +422,7 @@ function initLandingPreview() {
 }
 
 /**
- * QR Code Delete Handlers with accessible UI updates and empty-state handling
+ * 6. QR CODE DELETION ENGINE (Live Announcements & State Updates)
  */
 function attachDeleteHandlers() {
     document.querySelectorAll(".delete-qr-btn").forEach(btn => {
@@ -348,10 +465,6 @@ function attachDeleteHandlers() {
                         if (statsCount) {
                             statsCount.textContent = resData.remaining_count;
                         }
-                        const statsSavedCount = document.getElementById("statsSavedCount");
-                        if (statsSavedCount) {
-                            statsSavedCount.textContent = resData.remaining_count;
-                        }
                     }
 
                     // Remove card from history grid or row from dashboard table
@@ -360,14 +473,10 @@ function attachDeleteHandlers() {
 
                     if (card) {
                         card.remove();
-
-                        // Check if grid is now empty
-                        const remainingCards = document.querySelectorAll("#historyCardsGrid .col-md-6, #historyCardsGrid .col-lg-4");
+                        const remainingCards = document.querySelectorAll("#historyCardsGrid tr, #historyCardsGrid .col-md-6");
                         if (remainingCards.length === 0) {
                             const emptyState = document.getElementById("historyEmptyState");
-                            if (emptyState) {
-                                emptyState.classList.remove("d-none");
-                            }
+                            if (emptyState) emptyState.classList.remove("d-none");
                         }
                     }
 
@@ -394,18 +503,24 @@ function attachDeleteHandlers() {
 }
 
 /**
- * XSS-Safe History Preview Modal Handler
+ * 7. XSS-SAFE HISTORY PREVIEW MODAL
  */
-function openPreviewModal(id, title, content) {
+function openPreviewModal(id, title, content, type) {
     const modalEl = document.getElementById("qrDetailModal");
     if (!modalEl) return;
 
-    // Plain text assignment prevents HTML/JS execution
+    // Plain text assignment prevents HTML/JS injection
     const titleEl = document.getElementById("modalQrTitle");
     if (titleEl) titleEl.textContent = title || "QR Code Details";
 
     const contentEl = document.getElementById("modalQrContent");
     if (contentEl) contentEl.textContent = content || "";
+
+    const typeBadge = document.getElementById("modalQrTypeBadge");
+    if (typeBadge && type) {
+        typeBadge.textContent = type.toUpperCase();
+        typeBadge.className = `badge badge-${type}`;
+    }
 
     const imgEl = document.getElementById("modalQrImage");
     if (imgEl) imgEl.src = `/api/qr/${encodeURIComponent(id)}/image`;
@@ -420,7 +535,7 @@ function openPreviewModal(id, title, content) {
 }
 
 /**
- * Initialize event listeners for safe preview triggers in history
+ * 8. HISTORY PREVIEW TRIGGERS
  */
 function initPreviewTriggers() {
     document.querySelectorAll(".qr-preview-trigger").forEach(trigger => {
@@ -429,7 +544,8 @@ function initPreviewTriggers() {
             const id = this.getAttribute("data-id");
             const title = this.getAttribute("data-title");
             const content = this.getAttribute("data-content");
-            openPreviewModal(id, title, content);
+            const type = this.getAttribute("data-type") || "url";
+            openPreviewModal(id, title, content, type);
         });
 
         trigger.addEventListener("keydown", function(e) {
@@ -438,16 +554,22 @@ function initPreviewTriggers() {
                 const id = this.getAttribute("data-id");
                 const title = this.getAttribute("data-title");
                 const content = this.getAttribute("data-content");
-                openPreviewModal(id, title, content);
+                const type = this.getAttribute("data-type") || "url";
+                openPreviewModal(id, title, content, type);
             }
         });
     });
 }
 
 /**
- * History Page Initialization
+ * 9. HISTORY PAGE INITIALIZATION (/history)
  */
 function initHistoryPage() {
     initPreviewTriggers();
     attachDeleteHandlers();
 }
+
+// Automatically initialize theme toggle on DOM load across every page
+document.addEventListener("DOMContentLoaded", function() {
+    initThemeToggle();
+});
