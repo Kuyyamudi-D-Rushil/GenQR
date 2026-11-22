@@ -34,6 +34,18 @@ class Config:
     SQLALCHEMY_DATABASE_URI = raw_db_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Connection pooling and pre-ping to prevent stale connections on cloud PostgreSQL
+    if raw_db_url.startswith("postgresql"):
+        SQLALCHEMY_ENGINE_OPTIONS = {
+            "pool_pre_ping": True,
+            "pool_recycle": int(os.getenv("DB_POOL_RECYCLE", "300")),
+            "pool_size": int(os.getenv("DB_POOL_SIZE", "5")),
+            "max_overflow": int(os.getenv("DB_MAX_OVERFLOW", "10")),
+            "pool_timeout": int(os.getenv("DB_POOL_TIMEOUT", "30")),
+        }
+    else:
+        SQLALCHEMY_ENGINE_OPTIONS = {}
+
     # Security & CSRF
     WTF_CSRF_ENABLED = True
     WTF_CSRF_TIME_LIMIT = None  # Prevents unexpected form expiry during active user sessions

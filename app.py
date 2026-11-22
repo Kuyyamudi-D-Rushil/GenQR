@@ -47,7 +47,8 @@ def create_app(config_class=Config):
     def home():
         return render_template("index.html")
 
-    # Cloud Orchestration Health Check Endpoint
+    # Cloud Orchestration Health Check Endpoints
+    @app.route("/health")
     @app.route("/healthz")
     def health_check():
         """Idempotent health check probing application and database status."""
@@ -67,6 +68,15 @@ def create_app(config_class=Config):
                 "database": "disconnected",
                 "error": "Database probe failed"
             }), 503
+
+    @app.route("/health/live")
+    def liveness_check():
+        """Lightweight liveness check confirming the HTTP worker is responsive."""
+        return jsonify({
+            "status": "live",
+            "service": "cloud-qr-generator",
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }), 200
 
     # Global error handlers
     @app.errorhandler(404)

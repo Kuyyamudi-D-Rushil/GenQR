@@ -58,11 +58,31 @@ def test_rate_limit_preview_behavior():
 
 def test_health_check_endpoint(client):
     """Verify cloud container health check probes application and database status."""
-    response = client.get("/healthz")
-    assert response.status_code == 200
-    data = response.get_json()
-    assert data["status"] == "healthy"
-    assert data["database"] == "connected"
-    assert data["service"] == "cloud-qr-generator"
-    assert "timestamp" in data
+    for endpoint in ["/healthz", "/health"]:
+        response = client.get(endpoint)
+        assert response.status_code == 200
+        data = response.get_json()
+        assert data["status"] == "healthy"
+        assert data["database"] == "connected"
+        assert data["service"] == "cloud-qr-generator"
+        assert "timestamp" in data
+
+    # Test liveness check
+    live_resp = client.get("/health/live")
+    assert live_resp.status_code == 200
+    live_data = live_resp.get_json()
+    assert live_data["status"] == "live"
+
+
+def test_health_check_database_failure_returns_503(client):
+    """Verify health check returns 503 when database execution fails."""
+    from unittest.mock import patch
+    from sqlalchemy.exc import OperationalError
+
+    with patch("extensions.db.session.execute", side_effect=OperationalError("Connection failed", {}, None)):
+        resp = client.get("/health")
+        assert resp.status_code == 503
+        data = resp.get_json()
+        assert data["status"] == "unhealthy"
+        assert data["database"] == "disconnected"
 
