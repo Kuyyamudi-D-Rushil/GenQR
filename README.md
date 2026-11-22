@@ -94,6 +94,8 @@ The application implements a clean **3-Tier Cloud Architecture**:
 | `background` | `VARCHAR(7)` | Default `'#FFFFFF'` | 6-character hex color |
 | `created_at` | `TIMESTAMP` | `DEFAULT UTC NOW`, `INDEX` | Generation timestamp |
 
+> **Composite Index:** `ix_qr_codes_user_created` on `(user_id, created_at)` accelerates paginated user history queries.
+
 ---
 
 ## 🛠️ Technology Stack
@@ -110,6 +112,7 @@ The application implements a clean **3-Tier Cloud Architecture**:
 | **Authentication** | Flask-Login | User sessions and access control |
 | **Password Security** | Werkzeug (`generate_password_hash`) | Cryptographic password hashing |
 | **CSRF Protection** | Flask-WTF (`CSRFProtect`) | Protection against CSRF attacks |
+| **Rate Limiting** | Flask-Limiter | Brute-force throttling and endpoint abuse protection |
 | **Cloud Database** | Render Managed PostgreSQL | High-availability cloud persistence |
 | **Hosting Platform** | Render Web Services | Cloud deployment and orchestration |
 | **Test Suite** | pytest | 15 automated unit & integration tests |
@@ -189,9 +192,10 @@ pip install -r requirements.txt
 ### 3. Setup Local Environment Variables
 A sample `.env` file is included:
 ```env
-SECRET_KEY=dev-cloud-qr-secret-key-9f8a3c2b1e
+SECRET_KEY=your-local-development-secret-key-min-32-chars
 DATABASE_URL=sqlite:///qr_generator.db
 FLASK_DEBUG=1
+FLASK_ENV=development
 ```
 
 ### 4. Initialize Database
@@ -298,12 +302,12 @@ Under the **Environment** tab of your Render Web Service, add two variables:
 | `GET` | `/register` | No | Registration page | None |
 | `POST` | `/register` | No | Creates new user account | `username`, `email`, `password`, `confirm_password` |
 | `GET` | `/login` | No | Login page | None |
-| `POST` | `/login` | No | Authenticates user session | `email`, `password`, `remember` |
-| `GET` | `/logout` | **Yes** | Terminates session | None |
+| `POST` | `/login` | No | Authenticates user session (10 req/min limit) | `email`, `password`, `remember` |
+| `POST` | `/logout` | **Yes** | Terminates session (CSRF protected) | None |
 | `GET` | `/dashboard` | **Yes** | User metrics, fast generator, recent list | None |
-| `GET` | `/history` | **Yes** | Full QR history portfolio | Query: `?type=url&q=search&sort=newest` |
+| `GET` | `/history` | **Yes** | Server-paginated QR portfolio | Query: `?type=url&q=search&sort=newest&page=1&per_page=9` |
 | `POST` | `/api/generate` | **Yes** | Generates QR, persists to DB, streams PNG | `{ "title", "qr_type", "content", "foreground", "background" }` |
-| `POST` | `/api/preview` | No | Public instant preview (stateless) | `{ "content", "qr_type", "foreground", "background" }` |
+| `POST` | `/api/preview` | No | Public instant preview (20 req/min limit) | `{ "content", "qr_type", "foreground", "background" }` |
 | `GET` | `/api/qr/<id>/image` | **Yes** | Dynamically regenerates stored QR PNG | None |
 | `GET` | `/api/qr/<id>/download`| **Yes** | Downloads QR PNG with custom filename | None |
 | `DELETE`| `/api/qr/<id>` | **Yes** | Deletes user's QR record from cloud DB | None |

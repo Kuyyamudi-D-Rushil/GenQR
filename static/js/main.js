@@ -1,6 +1,6 @@
 /**
  * CloudQR Client Engine
- * Asynchronous QR Generation, Cloud Persistence, Color Customizer, and History Management
+ * Asynchronous QR Generation, Cloud Persistence, Color Customizer, History Management & XSS-Safe Modals
  */
 
 // Helper to extract CSRF Token from meta tag
@@ -23,11 +23,11 @@ function updateTypeInputConfig(type, elements) {
     if (type === "url") {
         if (label) label.textContent = "TARGET WEB URL";
         input.placeholder = "https://yourdomain.com";
-        if (helper) helper.textContent = "Destination website link. https:// will be prepended if missing.";
+        if (helper) helper.textContent = "Destination website link. Include a valid domain (e.g. https://example.com).";
     } else if (type === "text") {
         if (label) label.textContent = "PLAIN TEXT CONTENT";
         input.placeholder = "Enter any message, memo, or raw data...";
-        if (helper) helper.textContent = "Standard text information encoded into the QR matrix (up to 2048 chars).";
+        if (helper) helper.textContent = "Standard text information encoded into the QR matrix (up to 2048 bytes).";
     } else if (type === "email") {
         if (label) label.textContent = "RECIPIENT EMAIL ADDRESS";
         input.placeholder = "contact@company.com";
@@ -35,7 +35,7 @@ function updateTypeInputConfig(type, elements) {
     } else if (type === "phone") {
         if (label) label.textContent = "PHONE NUMBER";
         input.placeholder = "+1 555-123-4567";
-        if (helper) helper.textContent = "Contact phone number formatted for one-touch dialing (tel: protocol).";
+        if (helper) helper.textContent = "Contact phone number formatted for one-touch dialing (7 to 15 digits).";
     }
 }
 
@@ -186,7 +186,7 @@ function initDashboard() {
                 const imageBlob = await response.blob();
                 activeBlobUrl = URL.createObjectURL(imageBlob);
 
-                // Update Preview image
+                // Update Preview image & info safely using textContent
                 if (previewImg) {
                     previewImg.src = activeBlobUrl;
                     previewImg.classList.remove("opacity-25");
@@ -207,10 +207,9 @@ function initDashboard() {
                     previewStatus.className = "badge bg-success-subtle text-success rounded-pill";
                 }
 
-                // Add newly generated QR to recent table if table exists
+                // Reload smoothly if on dashboard to show in recent table
                 const newQrId = response.headers.get("X-QR-ID");
                 if (newQrId) {
-                    // Prepend new row smoothly or reload after a short delay
                     setTimeout(() => {
                         window.location.reload();
                     }, 1200);
@@ -312,6 +311,13 @@ function initLandingPreview() {
                     downloadBtn.href = activePreviewBlobUrl;
                     downloadBtn.download = "cloud_qr_preview.png";
                 }
+            } else {
+                const err = await response.json().catch(() => ({}));
+                if (response.status === 429) {
+                    alert(err.error || "Rate limit reached. Please wait a moment.");
+                } else if (err.error) {
+                    alert(err.error);
+                }
             }
         } catch (err) {
             console.error("Preview render failed", err);
@@ -332,7 +338,7 @@ function initLandingPreview() {
 }
 
 /**
- * QR Code Delete Handlers
+ * QR Code Delete Handlers with accessible UI updates and empty-state handling
  */
 function attachDeleteHandlers() {
     document.querySelectorAll(".delete-qr-btn").forEach(btn => {
@@ -348,7 +354,7 @@ function attachDeleteHandlers() {
             }
 
             try {
-                const response = await fetch(`/api/qr/${qrId}`, {
+                const response = await fetch(`/api/qr/${encodeURIComponent(qrId)}`, {
                     method: "DELETE",
                     headers: {
                         "Content-Type": "application/json",
@@ -357,19 +363,52 @@ function attachDeleteHandlers() {
                 });
 
                 if (response.ok) {
-                    // Remove card from history grid or row from table
+                    const resData = await response.json().catch(() => ({}));
+
+                    // Update live accessibility announcement
+                    const liveRegion = document.getElementById("deletionLiveRegion");
+                    if (liveRegion) {
+                        liveRegion.textContent = `QR code "${qrTitle}" was deleted successfully.`;
+                    }
+
+                    // Update visible record badges
+                    if (resData.remaining_count !== undefined) {
+                        const totalBadge = document.getElementById("historyTotalBadge");
+                        if (totalBadge) {
+                            totalBadge.textContent = `${resData.remaining_count} total`;
+                        }
+                        const statsCount = document.getElementById("statsTotalCount");
+                        if (statsCount) {
+                            statsCount.textContent = resData.remaining_count;
+                        }
+                    }
+
+                    // Remove card from history grid or row from dashboard table
                     const card = document.getElementById(`qr-card-${qrId}`);
                     const row = document.getElementById(`qr-row-${qrId}`);
+
                     if (card) {
-                        card.style.transition = "opacity 0.3s ease, transform 0.3s ease";
-                        card.style.opacity = "0";
-                        card.style.transform = "scale(0.9)";
-                        setTimeout(() => card.remove(), 300);
+                        card.remove();
+
+                        // Check if grid is now empty
+                        const remainingCards = document.querySelectorAll("#historyCardsGrid .col-md-6");
+                        if (remainingCards.length === 0) {
+                            const emptyState = document.getElementById("historyEmptyState");
+                            if (emptyState) {
+                                emptyState.classList.remove("d-none");
+                            }
+                        }
                     }
+
                     if (row) {
-                        row.style.transition = "opacity 0.3s ease";
-                        row.style.opacity = "0";
-                        setTimeout(() => row.remove(), 300);
+                        row.remove();
+                        const remainingRows = document.querySelectorAll("#recentTableBody tr");
+                        if (remainingRows.length === 0) {
+                            const tableWrapper = document.getElementById("recentTableWrapper");
+                            if (tableWrapper) tableWrapper.classList.add("d-none");
+                            const emptyState = document.getElementById("recentEmptyState");
+                            if (emptyState) emptyState.classList.remove("d-none");
+                        }
                     }
                 } else {
                     const err = await response.json().catch(() => ({}));
@@ -384,20 +423,25 @@ function attachDeleteHandlers() {
 }
 
 /**
- * History Page Detail Modal Helper
+ * XSS-Safe History Preview Modal Handler
  */
-function openPreviewModal(id, title, content, type, fg, bg) {
+function openPreviewModal(id, title, content) {
     const modalEl = document.getElementById("qrDetailModal");
     if (!modalEl) return;
 
-    document.getElementById("modalQrTitle").textContent = title || "QR Code Details";
-    document.getElementById("modalQrContent").textContent = content;
+    // Plain text assignment prevents HTML/JS execution
+    const titleEl = document.getElementById("modalQrTitle");
+    if (titleEl) titleEl.textContent = title || "QR Code Details";
+
+    const contentEl = document.getElementById("modalQrContent");
+    if (contentEl) contentEl.textContent = content || "";
+
     const imgEl = document.getElementById("modalQrImage");
-    imgEl.src = `/api/qr/${id}/image`;
+    if (imgEl) imgEl.src = `/api/qr/${encodeURIComponent(id)}/image`;
 
     const downloadLink = document.getElementById("modalDownloadBtn");
     if (downloadLink) {
-        downloadLink.href = `/api/qr/${id}/download`;
+        downloadLink.href = `/api/qr/${encodeURIComponent(id)}/download`;
     }
 
     const modal = new bootstrap.Modal(modalEl);
@@ -405,8 +449,34 @@ function openPreviewModal(id, title, content, type, fg, bg) {
 }
 
 /**
+ * Initialize event listeners for safe preview triggers in history
+ */
+function initPreviewTriggers() {
+    document.querySelectorAll(".qr-preview-trigger").forEach(trigger => {
+        trigger.addEventListener("click", function(e) {
+            e.preventDefault();
+            const id = this.getAttribute("data-id");
+            const title = this.getAttribute("data-title");
+            const content = this.getAttribute("data-content");
+            openPreviewModal(id, title, content);
+        });
+
+        trigger.addEventListener("keydown", function(e) {
+            if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                const id = this.getAttribute("data-id");
+                const title = this.getAttribute("data-title");
+                const content = this.getAttribute("data-content");
+                openPreviewModal(id, title, content);
+            }
+        });
+    });
+}
+
+/**
  * History Page Initialization
  */
 function initHistoryPage() {
+    initPreviewTriggers();
     attachDeleteHandlers();
 }

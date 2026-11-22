@@ -1,14 +1,16 @@
+from unittest.mock import patch
+from sqlalchemy.exc import IntegrityError
 from models import User
 from extensions import db
 
 
 def test_register_success(client, app):
-    """Verify new user registration and database persistence."""
+    """Verify new user registration and database persistence with >= 12 char password."""
     response = client.post("/register", data={
         "username": "johndoe",
         "email": "john@example.com",
-        "password": "password123",
-        "confirm_password": "password123"
+        "password": "SecurePassword123!",
+        "confirm_password": "SecurePassword123!"
     }, follow_redirects=True)
 
     assert response.status_code == 200
@@ -16,22 +18,22 @@ def test_register_success(client, app):
         user = User.query.filter_by(email="john@example.com").first()
         assert user is not None
         assert user.username == "johndoe"
-        assert user.check_password("password123") is True
+        assert user.check_password("SecurePassword123!") is True
 
 
 def test_register_duplicate_email(client, app):
     """Verify registration fails when email is already registered."""
     with app.app_context():
         user = User(username="existing", email="existing@example.com")
-        user.set_password("pass1234")
+        user.set_password("SecurePassword123!")
         db.session.add(user)
         db.session.commit()
 
     response = client.post("/register", data={
         "username": "newname",
         "email": "existing@example.com",
-        "password": "password123",
-        "confirm_password": "password123"
+        "password": "SecurePassword123!",
+        "confirm_password": "SecurePassword123!"
     }, follow_redirects=True)
 
     assert b"already exists" in response.data
@@ -42,37 +44,51 @@ def test_register_password_mismatch(client):
     response = client.post("/register", data={
         "username": "alice",
         "email": "alice@example.com",
-        "password": "password123",
-        "confirm_password": "differentpassword"
+        "password": "SecurePassword123!",
+        "confirm_password": "DifferentPassword123!"
     }, follow_redirects=True)
 
     assert b"Passwords do not match" in response.data
 
 
 def test_register_short_password(client):
-    """Verify password length requirement (>= 6 chars)."""
+    """Verify password length requirement of at least 12 characters."""
     response = client.post("/register", data={
         "username": "bob",
         "email": "bob@example.com",
-        "password": "123",
-        "confirm_password": "123"
+        "password": "shortpass11",  # 11 chars
+        "confirm_password": "shortpass11"
     }, follow_redirects=True)
 
-    assert b"at least 6 characters" in response.data
+    assert b"at least 12 characters" in response.data
 
 
-def test_login_success_and_logout(client, app):
-    """Verify successful login and session termination on logout."""
+def test_register_integrity_error_rollback(client, app):
+    """Verify that an unexpected database collision during registration rolls back cleanly."""
+    with patch("extensions.db.session.commit", side_effect=IntegrityError("duplicate", {}, Exception())):
+        response = client.post("/register", data={
+            "username": "collision_user",
+            "email": "collision@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "SecurePassword123!"
+        }, follow_redirects=True)
+
+        assert response.status_code == 400
+        assert b"already exists" in response.data
+
+
+def test_login_success_and_logout_post_only(client, app):
+    """Verify login, dashboard access, and CSRF/POST-only logout behavior."""
     with app.app_context():
         user = User(username="charlie", email="charlie@example.com")
-        user.set_password("correctpass123")
+        user.set_password("SecurePassword123!")
         db.session.add(user)
         db.session.commit()
 
     # Valid Login
     login_resp = client.post("/login", data={
         "email": "charlie@example.com",
-        "password": "correctpass123"
+        "password": "SecurePassword123!"
     }, follow_redirects=True)
     assert login_resp.status_code == 200
     assert b"Welcome back" in login_resp.data
@@ -81,8 +97,12 @@ def test_login_success_and_logout(client, app):
     dash_resp = client.get("/dashboard")
     assert dash_resp.status_code == 200
 
-    # Logout
-    logout_resp = client.get("/logout", follow_redirects=True)
+    # GET /logout is strictly forbidden (Method Not Allowed)
+    get_logout_resp = client.get("/logout")
+    assert get_logout_resp.status_code == 405
+
+    # POST /logout succeeds
+    logout_resp = client.post("/logout", follow_redirects=True)
     assert logout_resp.status_code == 200
     assert b"logged out" in logout_resp.data
 
@@ -95,13 +115,13 @@ def test_login_invalid_credentials(client, app):
     """Verify invalid password rejection."""
     with app.app_context():
         user = User(username="dave", email="dave@example.com")
-        user.set_password("actualpass123")
+        user.set_password("SecurePassword123!")
         db.session.add(user)
         db.session.commit()
 
     response = client.post("/login", data={
         "email": "dave@example.com",
-        "password": "wrongpassword"
+        "password": "WrongPassword123!"
     }, follow_redirects=True)
 
     assert b"Invalid email or password" in response.data

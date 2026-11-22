@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from flask import Flask, render_template, jsonify, request
 from config import Config
-from extensions import db, login_manager, csrf, migrate
+from extensions import db, login_manager, csrf, migrate, limiter
 from models import User
 
 
@@ -15,6 +15,7 @@ def create_app(config_class=Config):
     login_manager.init_app(app)
     csrf.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # User loader for Flask-Login
     @login_manager.user_loader
@@ -67,6 +68,18 @@ def create_app(config_class=Config):
             return jsonify({"error": "Forbidden"}), 403
         return render_template("base.html", error_title="403 - Forbidden",
                                error_message="You do not have permission to access this resource."), 403
+
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        if request.path.startswith("/api/"):
+            return jsonify({
+                "error": "Rate limit exceeded. Please wait a moment before trying again."
+            }), 429
+        return render_template(
+            "base.html",
+            error_title="429 - Rate Limit Exceeded",
+            error_message="Too many requests have been made from your IP address. Please wait a moment before trying again."
+        ), 429
 
     return app
 

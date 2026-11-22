@@ -1,8 +1,9 @@
 import re
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from email_validator import validate_email, EmailNotValidError
-from extensions import db
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from extensions import db, limiter
 from models import User
 
 auth_bp = Blueprint("auth", __name__)
@@ -10,7 +11,7 @@ auth_bp = Blueprint("auth", __name__)
 
 @auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    """Register a new user account with secure password hashing."""
+    """Register a new user account with secure password hashing and robust DB error handling."""
     if request.method == "GET" and current_user.is_authenticated:
         return redirect(url_for("history.dashboard"))
 
@@ -28,18 +29,18 @@ def register():
 
         # Validate email
         try:
-            valid = validate_email(email)
+            valid = validate_email(email, check_deliverability=False)
             email = valid.normalized
         except (EmailNotValidError, ValueError):
             errors.append("Please enter a valid email address.")
 
-        # Validate password
-        if not password or len(password) < 6:
-            errors.append("Password must be at least 6 characters long.")
+        # Validate password (minimum 12 characters)
+        if not password or len(password) < 12:
+            errors.append("Password must be at least 12 characters long.")
         elif password != confirm_password:
             errors.append("Passwords do not match.")
 
-        # Check existing user
+        # Pre-check existing user
         if not errors:
             if User.query.filter_by(email=email).first():
                 errors.append("An account with this email address already exists.")
@@ -53,13 +54,25 @@ def register():
                 "register.html",
                 username=username,
                 email=email
-            )
+            ), 400
 
-        # Create user
+        # Create user with atomic rollback handling for concurrent duplicates
         new_user = User(username=username, email=email)
         new_user.set_password(password)
-        db.session.add(new_user)
-        db.session.commit()
+
+        try:
+            db.session.add(new_user)
+            db.session.commit()
+        except IntegrityError as e:
+            db.session.rollback()
+            current_app.logger.warning("Duplicate registration collision for %s: %s", email, str(e))
+            flash("An account with this email address or username already exists.", "danger")
+            return render_template("register.html", username=username, email=email), 400
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            current_app.logger.exception("Database error during registration: %s", str(e))
+            flash("A database error occurred while creating your account. Please try again later.", "danger")
+            return render_template("register.html", username=username, email=email), 500
 
         # Log the newly registered user in automatically
         login_user(new_user)
@@ -70,8 +83,9 @@ def register():
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("10 per minute", methods=["POST"])
 def login():
-    """Log in an existing user with credential verification."""
+    """Log in an existing user with credential verification and brute-force throttling."""
     if request.method == "GET" and current_user.is_authenticated:
         return redirect(url_for("history.dashboard"))
 
@@ -86,20 +100,20 @@ def login():
             login_user(user, remember=remember)
             flash(f"Welcome back, {user.username}!", "success")
             next_page = request.args.get("next")
-            if next_page and next_page.startswith("/"):
+            if next_page and next_page.startswith("/") and not next_page.startswith("//"):
                 return redirect(next_page)
             return redirect(url_for("history.dashboard"))
 
         flash("Invalid email or password. Please try again.", "danger")
-        return render_template("login.html", email=email)
+        return render_template("login.html", email=email), 401
 
     return render_template("login.html")
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
-    """Clear user session and log out."""
+    """Clear user session and log out via CSRF-protected POST request."""
     logout_user()
     flash("You have been successfully logged out.", "info")
     return redirect(url_for("home"))

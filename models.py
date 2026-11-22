@@ -43,6 +43,9 @@ class QRCode(db.Model):
     """QR Code metadata record stored in the cloud database."""
 
     __tablename__ = "qr_codes"
+    __table_args__ = (
+        db.Index("ix_qr_codes_user_created", "user_id", "created_at"),
+    )
 
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(
