@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In | CloudQR{% endblock %}
+
+{% block content %}
+<div class="container py-5 my-auto">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card glass-card border-secondary-subtle shadow-2xl p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="brand-icon-wrapper mx-auto mb-3">
+                        <i class="bi bi-qr-code-scan"></i>
+                    </div>
+                    <h3 class="fw-bold text-white mb-1">Welcome Back</h3>
+                    <p class="text-secondary small">Sign in to access your cloud QR codes and dashboard</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label text-muted small fw-semibold">EMAIL ADDRESS</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <input type="email" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="email" name="email" value="{{ email or '' }}" placeholder="you@domain.com" required autofocus>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label text-muted small fw-semibold">PASSWORD</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input type="password" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="password" name="password" placeholder="••••••••" required>
+                            <button class="btn btn-outline-secondary border-secondary-subtle" type="button" id="togglePasswordBtn">
+                                <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remember" id="remember" checked>
+                            <label class="form-check-label text-secondary small" for="remember">
+                                Remember this device
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-semibold shadow-sm mb-3">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Account
+                    </button>
+
+                    <div class="text-center">
+                        <span class="text-muted small">Don't have an account yet? </span>
+                        <a href="{{ url_for('auth.register') }}" class="text-primary fw-semibold small text-decoration-none">Create Account</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const toggleBtn = document.getElementById("togglePasswordBtn");
+    const pwdInput = document.getElementById("password");
+    const pwdIcon = document.getElementById("togglePasswordIcon");
+    if (toggleBtn && pwdInput) {
+        toggleBtn.addEventListener("click", function() {
+            if (pwdInput.type === "password") {
+                pwdInput.type = "text";
+                pwdIcon.classList.replace("bi-eye", "bi-eye-slash");
+            } else {
+                pwdInput.type = "password";
+                pwdIcon.classList.replace("bi-eye-slash", "bi-eye");
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

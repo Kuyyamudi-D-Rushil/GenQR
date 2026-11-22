@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cloud-Based QR Code Generator{% endblock %} | CloudQR</title>
+    <!-- CSRF Token Meta -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    <!-- Google Fonts: Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Application CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+    <!-- Top Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top glass-navbar py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2 fw-bold" href="{{ url_for('home') }}">
+                <span class="brand-icon-wrapper">
+                    <i class="bi bi-qr-code-scan"></i>
+                </span>
+                <span class="brand-text">Cloud<span class="text-primary-gradient">QR</span></span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill fs-xs px-2 py-1 ms-1">Cloud SaaS</span>
+            </a>
+            
+            <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+                    <li class="nav-item">
+                        <a class="nav-link px-3" href="{{ url_for('home') }}#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3" href="{{ url_for('home') }}#architecture">Architecture</a>
+                    </li>
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link px-3 {% if request.endpoint == 'history.dashboard' %}active text-white fw-semibold{% endif %}" href="{{ url_for('history.dashboard') }}">
+                            <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 {% if request.endpoint == 'history.history' %}active text-white fw-semibold{% endif %}" href="{{ url_for('history.history') }}">
+                            <i class="bi bi-clock-history me-1"></i> QR History
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+
+                <div class="d-flex align-items-center gap-2">
+                    {% if current_user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3 py-2" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                <span class="user-avatar-circle">
+                                    {{ current_user.username[0]|upper }}
+                                </span>
+                                <span class="fw-medium text-truncate max-w-150">{{ current_user.username }}</span>
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-secondary-subtle">
+                                <li class="px-3 py-2 text-muted small border-bottom">
+                                    Signed in as <br><strong class="text-body">{{ current_user.email }}</strong>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2" href="{{ url_for('history.dashboard') }}">
+                                        <i class="bi bi-grid-1x2 me-2 text-primary"></i> Dashboard
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item py-2" href="{{ url_for('history.history') }}">
+                                        <i class="bi bi-collection me-2 text-info"></i> All Saved QRs
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item py-2 text-danger" href="{{ url_for('auth.logout') }}">
+                                        <i class="bi bi-box-arrow-right me-2"></i> Log Out
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-link text-light text-decoration-none px-3">Log In</a>
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary rounded-pill px-4 shadow-sm">
+                            Get Started <i class="bi bi-arrow-right ms-1"></i>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages Container -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show shadow-sm rounded-3 d-flex align-items-center gap-2" role="alert">
+                        {% if category in ['success'] %}
+                            <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                        {% elif category in ['danger', 'error'] %}
+                            <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill text-info fs-5"></i>
+                        {% endif %}
+                        <div class="flex-grow-1">{{ message }}</div>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Error Fallback (if any) -->
+    {% if error_title %}
+    <main class="flex-grow-1 d-flex align-items-center justify-content-center py-5">
+        <div class="container text-center">
+            <div class="card glass-card p-5 mx-auto max-w-600 shadow-lg">
+                <i class="bi bi-exclamation-octagon text-danger display-1 mb-3"></i>
+                <h2 class="fw-bold mb-2">{{ error_title }}</h2>
+                <p class="text-muted mb-4">{{ error_message }}</p>
+                <div>
+                    <a href="{{ url_for('home') }}" class="btn btn-primary rounded-pill px-4">
+                        <i class="bi bi-house-door me-1"></i> Return Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+    {% else %}
+    <!-- Main Content Area -->
+    <main class="flex-grow-1">
+        {% block content %}{% endblock %}
+    </main>
+    {% endif %}
+
+    <!-- Footer -->
+    <footer class="footer mt-auto py-5 border-top border-secondary-subtle">
+        <div class="container">
+            <div class="row g-4 align-items-center">
+                <div class="col-lg-6 text-center text-lg-start">
+                    <div class="d-flex align-items-center justify-content-center justify-content-lg-start gap-2 mb-2">
+                        <span class="brand-icon-wrapper sm">
+                            <i class="bi bi-qr-code-scan"></i>
+                        </span>
+                        <span class="fw-bold fs-5">Cloud<span class="text-primary-gradient">QR</span></span>
+                    </div>
+                    <p class="text-muted small mb-0">
+                        Cloud Computing Mini Project &middot; Engineered with Python Flask, PostgreSQL, Render Cloud Platform, and Bootstrap 5.
+                    </p>
+                </div>
+                <div class="col-lg-6 text-center text-lg-end">
+                    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-end gap-2 mb-2">
+                        <span class="tech-badge"><i class="bi bi-cloud-check text-info me-1"></i> Render Hosted</span>
+                        <span class="tech-badge"><i class="bi bi-database text-warning me-1"></i> Cloud PostgreSQL</span>
+                        <span class="tech-badge"><i class="bi bi-filetype-py text-success me-1"></i> Flask 3</span>
+                        <span class="tech-badge"><i class="bi bi-shield-lock text-primary me-1"></i> Werkzeug Hash</span>
+                    </div>
+                    <div class="text-muted fs-xs">
+                        &copy; {{ current_year }} CloudQR Generator. All rights reserved.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Main Application JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

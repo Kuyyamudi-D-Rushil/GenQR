@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}QR Code History | CloudQR{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header with Breadcrumbs & Action -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('history.dashboard') }}" class="text-secondary text-decoration-none small">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+                <span class="text-secondary small">/</span>
+                <span class="text-white small fw-semibold">QR Code Portfolio</span>
+            </div>
+            <h2 class="fw-bold text-white mb-0">QR Code History & Cloud Archive</h2>
+        </div>
+        <div>
+            <a href="{{ url_for('history.dashboard') }}" class="btn btn-primary rounded-pill px-4">
+                <i class="bi bi-plus-lg me-1"></i> Generate New QR
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="card glass-card border-secondary-subtle p-3 mb-4 shadow-sm">
+        <form method="GET" action="{{ url_for('history.history') }}" class="row g-2 align-items-center">
+            <!-- Search Query -->
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" name="q" class="form-control bg-dark-subtle border-secondary-subtle text-white" placeholder="Search by title or encoded content..." value="{{ search_query }}">
+                </div>
+            </div>
+
+            <!-- Type Filter Dropdown -->
+            <div class="col-md-3">
+                <select name="type" class="form-select bg-dark-subtle border-secondary-subtle text-white" onchange="this.form.submit()">
+                    <option value="all" {% if current_type == 'all' %}selected{% endif %}>All QR Types</option>
+                    <option value="url" {% if current_type == 'url' %}selected{% endif %}>URL Link</option>
+                    <option value="text" {% if current_type == 'text' %}selected{% endif %}>Plain Text</option>
+                    <option value="email" {% if current_type == 'email' %}selected{% endif %}>Email Address</option>
+                    <option value="phone" {% if current_type == 'phone' %}selected{% endif %}>Phone Number</option>
+                </select>
+            </div>
+
+            <!-- Sorting Dropdown -->
+            <div class="col-md-3">
+                <select name="sort" class="form-select bg-dark-subtle border-secondary-subtle text-white" onchange="this.form.submit()">
+                    <option value="newest" {% if sort_order == 'newest' %}selected{% endif %}>Newest First</option>
+                    <option value="oldest" {% if sort_order == 'oldest' %}selected{% endif %}>Oldest First</option>
+                    <option value="title" {% if sort_order == 'title' %}selected{% endif %}>Title A-Z</option>
+                </select>
+            </div>
+
+            <div class="col-md-1 d-grid">
+                <button type="submit" class="btn btn-outline-secondary">Filter</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- QR Cards Grid -->
+    {% if qr_records %}
+    <div class="row g-4 mb-4">
+        {% for qr in qr_records %}
+        <div class="col-md-6 col-lg-4" id="qr-card-{{ qr.id }}">
+            <div class="card glass-card border-secondary-subtle h-100 shadow-sm qr-history-card">
+                <!-- Card Header -->
+                <div class="card-header bg-transparent border-secondary-subtle d-flex align-items-center justify-content-between py-3">
+                    <div>
+                        {% if qr.qr_type == 'url' %}
+                            <span class="badge bg-info-subtle text-info rounded-pill"><i class="bi bi-link-45deg me-1"></i>URL</span>
+                        {% elif qr.qr_type == 'email' %}
+                            <span class="badge bg-success-subtle text-success rounded-pill"><i class="bi bi-envelope me-1"></i>Email</span>
+                        {% elif qr.qr_type == 'phone' %}
+                            <span class="badge bg-warning-subtle text-warning rounded-pill"><i class="bi bi-telephone me-1"></i>Phone</span>
+                        {% else %}
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill"><i class="bi bi-card-text me-1"></i>Text</span>
+                        {% endif %}
+                    </div>
+                    <span class="text-secondary fs-xs">
+                        {{ qr.created_at.strftime('%b %d, %Y') }}
+                    </span>
+                </div>
+
+                <!-- QR Thumbnail & Body -->
+                <div class="card-body text-center p-4">
+                    <div class="qr-thumbnail-container mx-auto mb-3 p-2 rounded bg-dark border border-secondary-subtle cursor-pointer" onclick="openPreviewModal({{ qr.id }}, '{{ qr.title|escape }}', '{{ qr.content|escape }}', '{{ qr.qr_type }}', '{{ qr.foreground }}', '{{ qr.background }}')">
+                        <img src="{{ url_for('generator.get_qr_image', qr_id=qr.id) }}" alt="{{ qr.title }}" class="img-fluid rounded" style="max-height: 180px;">
+                    </div>
+
+                    <h5 class="fw-bold text-white text-truncate mb-1" title="{{ qr.title }}">{{ qr.title }}</h5>
+                    <div class="text-secondary fs-xs font-monospace text-truncate mb-3" title="{{ qr.content }}">
+                        {{ qr.content }}
+                    </div>
+
+                    <!-- Colors & Details -->
+                    <div class="d-flex align-items-center justify-content-center gap-3 text-secondary fs-xs border-top border-secondary-subtle pt-3">
+                        <div class="d-flex align-items-center gap-1">
+                            <span>FG:</span>
+                            <span class="color-dot" style="background-color: {{ qr.foreground }}"></span>
+                            <span class="font-monospace">{{ qr.foreground }}</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-1">
+                            <span>BG:</span>
+                            <span class="color-dot border" style="background-color: {{ qr.background }}"></span>
+                            <span class="font-monospace">{{ qr.background }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Footer Actions -->
+                <div class="card-footer bg-transparent border-secondary-subtle d-flex gap-2 p-3">
+                    <a href="{{ url_for('generator.download_qr', qr_id=qr.id) }}" class="btn btn-outline-light btn-sm flex-grow-1 rounded-pill">
+                        <i class="bi bi-download me-1"></i> Download
+                    </a>
+                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 delete-qr-btn" data-id="{{ qr.id }}" data-title="{{ qr.title }}" title="Delete from Cloud">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="card glass-card border-secondary-subtle text-center py-5 shadow-sm">
+        <div class="py-4">
+            <i class="bi bi-folder2-open display-3 text-secondary opacity-50 mb-3 d-block"></i>
+            <h4 class="fw-bold text-white mb-2">No QR Records Found</h4>
+            <p class="text-secondary max-w-500 mx-auto mb-4">
+                {% if search_query or current_type != 'all' %}
+                    No QR codes matched your current filter criteria. Try clearing search filters.
+                {% else %}
+                    You have not generated any QR codes yet. Create your first code to demonstrate cloud persistence!
+                {% endif %}
+            </p>
+            {% if search_query or current_type != 'all' %}
+                <a href="{{ url_for('history.history') }}" class="btn btn-outline-light rounded-pill px-4">
+                    Clear Filters
+                </a>
+            {% else %}
+                <a href="{{ url_for('history.dashboard') }}" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-plus-lg me-1"></i> Generate Your First QR
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal for Inspecting QR Details -->
+<div class="modal fade" id="qrDetailModal" tabindex="-1" aria-labelledby="qrDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-secondary-subtle text-white">
+            <div class="modal-header border-secondary-subtle">
+                <h5 class="modal-title fw-bold" id="modalQrTitle">QR Code Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-4">
+                <img id="modalQrImage" src="" alt="Full QR Code" class="img-fluid rounded shadow-sm max-h-260 mb-3 bg-white p-2">
+                <div class="text-start bg-dark p-3 rounded border border-secondary-subtle mb-3">
+                    <label class="text-muted fs-xs fw-semibold">ENCODED CONTENT</label>
+                    <div class="font-monospace small text-break text-info" id="modalQrContent"></div>
+                </div>
+                <div class="d-flex justify-content-center gap-3">
+                    <a id="modalDownloadBtn" href="#" class="btn btn-success rounded-pill px-4">
+                        <i class="bi bi-download me-1"></i> Download PNG
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    initHistoryPage();
+});
+</script>
+{% endblock %}

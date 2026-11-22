@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account | CloudQR{% endblock %}
+
+{% block content %}
+<div class="container py-5 my-auto">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card glass-card border-secondary-subtle shadow-2xl p-4 p-md-5">
+                <div class="text-center mb-4">
+                    <div class="brand-icon-wrapper mx-auto mb-3">
+                        <i class="bi bi-shield-plus"></i>
+                    </div>
+                    <h3 class="fw-bold text-white mb-1">Create Account</h3>
+                    <p class="text-secondary small">Set up your free cloud storage account for QR codes</p>
+                </div>
+
+                <form method="POST" action="{{ url_for('auth.register') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label text-muted small fw-semibold">FULL NAME / USERNAME</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input type="text" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="username" name="username" value="{{ username or '' }}" placeholder="alex_dev" required autofocus minlength="3" maxlength="100">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label text-muted small fw-semibold">EMAIL ADDRESS</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <input type="email" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="email" name="email" value="{{ email or '' }}" placeholder="alex@domain.com" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="password" class="form-label text-muted small fw-semibold">PASSWORD (MIN 6 CHARS)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input type="password" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="password" name="password" placeholder="••••••••" required minlength="6">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="confirm_password" class="form-label text-muted small fw-semibold">CONFIRM PASSWORD</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
+                                <i class="bi bi-lock-fill"></i>
+                            </span>
+                            <input type="password" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="confirm_password" name="confirm_password" placeholder="••••••••" required minlength="6">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-semibold shadow-sm mb-3">
+                        <i class="bi bi-person-check me-1"></i> Register & Open Dashboard
+                    </button>
+
+                    <div class="text-center">
+                        <span class="text-muted small">Already have an account? </span>
+                        <a href="{{ url_for('auth.login') }}" class="text-primary fw-semibold small text-decoration-none">Sign In</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

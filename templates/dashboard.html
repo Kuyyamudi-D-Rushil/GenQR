@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | CloudQR{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header Greeting & Quick Stats -->
+    <div class="row align-items-center mb-4 g-3">
+        <div class="col-md-7">
+            <h2 class="fw-bold text-white mb-1">
+                Welcome back, <span class="text-primary-gradient">{{ current_user.username }}</span>! 👋
+            </h2>
+            <p class="text-secondary small mb-0">
+                Cloud persistence active &middot; All generated QR codes are stored in PostgreSQL.
+            </p>
+        </div>
+        <div class="col-md-5 text-md-end">
+            <a href="{{ url_for('history.history') }}" class="btn btn-outline-light rounded-pill px-3 py-2">
+                <i class="bi bi-collection me-1"></i> Manage All QRs ({{ stats.total }})
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Cards Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card glass-card p-3 border-secondary-subtle h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-xs fw-semibold">TOTAL SAVED</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill p-2"><i class="bi bi-qr-code"></i></span>
+                </div>
+                <h3 class="fw-bold text-white mb-0">{{ stats.total }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card p-3 border-secondary-subtle h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-xs fw-semibold">URL CODES</span>
+                    <span class="badge bg-info-subtle text-info rounded-pill p-2"><i class="bi bi-link-45deg"></i></span>
+                </div>
+                <h3 class="fw-bold text-white mb-0">{{ stats.url }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card p-3 border-secondary-subtle h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-xs fw-semibold">EMAILS</span>
+                    <span class="badge bg-success-subtle text-success rounded-pill p-2"><i class="bi bi-envelope"></i></span>
+                </div>
+                <h3 class="fw-bold text-white mb-0">{{ stats.email }}</h3>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card glass-card p-3 border-secondary-subtle h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="text-muted fs-xs fw-semibold">PHONE & TEXT</span>
+                    <span class="badge bg-warning-subtle text-warning rounded-pill p-2"><i class="bi bi-telephone"></i></span>
+                </div>
+                <h3 class="fw-bold text-white mb-0">{{ stats.phone + stats.text }}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generator & Preview Section -->
+    <div class="row g-4 mb-5">
+        <!-- Generator Form (Left Column) -->
+        <div class="col-lg-7">
+            <div class="card glass-card border-secondary-subtle shadow-lg p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-secondary-subtle mb-3">
+                    <h5 class="fw-bold text-white mb-0">
+                        <i class="bi bi-plus-circle text-primary me-2"></i>Create New Cloud QR Code
+                    </h5>
+                    <span class="badge bg-success-subtle text-success rounded-pill">Saves to Cloud</span>
+                </div>
+
+                <form id="dashboardGenerateForm">
+                    <!-- Title Input -->
+                    <div class="mb-3">
+                        <label for="qrTitle" class="form-label text-muted small fw-semibold">QR TITLE / LABEL</label>
+                        <input type="text" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="qrTitle" placeholder="e.g. My Website QR" value="Website Landing QR" maxlength="150">
+                    </div>
+
+                    <!-- QR Type Selector -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">INFORMATION TYPE</label>
+                        <div class="row g-2">
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypeUrl" value="url" checked>
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypeUrl">
+                                    <i class="bi bi-link-45deg fs-5"></i>
+                                    <span class="fs-xs">URL</span>
+                                </label>
+                            </div>
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypeText" value="text">
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypeText">
+                                    <i class="bi bi-card-text fs-5"></i>
+                                    <span class="fs-xs">Text</span>
+                                </label>
+                            </div>
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypeEmail" value="email">
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypeEmail">
+                                    <i class="bi bi-envelope fs-5"></i>
+                                    <span class="fs-xs">Email</span>
+                                </label>
+                            </div>
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypePhone" value="phone">
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypePhone">
+                                    <i class="bi bi-telephone fs-5"></i>
+                                    <span class="fs-xs">Phone</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Content Input -->
+                    <div class="mb-3">
+                        <label for="qrContent" class="form-label text-muted small fw-semibold" id="qrContentLabel">TARGET URL</label>
+                        <textarea class="form-control bg-dark-subtle border-secondary-subtle text-white font-monospace" id="qrContent" rows="3" placeholder="https://example.com" required>https://example.com</textarea>
+                        <div class="form-text text-muted fs-xs" id="qrContentHelper">Enter the destination web URL (https:// will be prepended if missing).</div>
+                    </div>
+
+                    <!-- Color Customization & Presets -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label text-muted small fw-semibold mb-0">COLOR PALETTE</label>
+                            <!-- Presets -->
+                            <div class="d-flex gap-1" id="palettePresets">
+                                <button type="button" class="btn-preset-dot" data-fg="#000000" data-bg="#FFFFFF" title="Classic Black & White" style="background: linear-gradient(135deg, #000 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#4F46E5" data-bg="#FFFFFF" title="Indigo Tech" style="background: linear-gradient(135deg, #4f46e5 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#059669" data-bg="#FFFFFF" title="Emerald Green" style="background: linear-gradient(135deg, #059669 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#DC2626" data-bg="#FFFFFF" title="Ruby Red" style="background: linear-gradient(135deg, #dc2626 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#7C3AED" data-bg="#FAF5FF" title="Royal Violet" style="background: linear-gradient(135deg, #7c3aed 50%, #faf5ff 50%);"></button>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="text-secondary fs-xs">Foreground (QR Dots)</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color border-0 p-1 bg-transparent cursor-pointer" id="qrForeground" value="#000000">
+                                    <input type="text" class="form-control form-control-sm bg-dark-subtle border-secondary-subtle text-white font-monospace text-uppercase" id="qrForegroundHex" value="#000000" maxlength="7">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="text-secondary fs-xs">Background</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color border-0 p-1 bg-transparent cursor-pointer" id="qrBackground" value="#FFFFFF">
+                                    <input type="text" class="form-control form-control-sm bg-dark-subtle border-secondary-subtle text-white font-monospace text-uppercase" id="qrBackgroundHex" value="#FFFFFF" maxlength="7">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-semibold shadow-sm" id="generateSubmitBtn">
+                        <i class="bi bi-cloud-arrow-up me-1"></i> Generate & Save to PostgreSQL
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Live Preview Box (Right Column) -->
+        <div class="col-lg-5">
+            <div class="card glass-card border-secondary-subtle shadow-lg p-4 h-100 d-flex flex-column text-center">
+                <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-secondary-subtle mb-3">
+                    <span class="fw-bold text-white">Live Render Preview</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill" id="previewStatusBadge">Ready</span>
+                </div>
+
+                <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center p-4 bg-dark rounded-3 border border-secondary-subtle mb-3 position-relative">
+                    <div id="renderSpinner" class="spinner-border text-primary d-none my-5" role="status">
+                        <span class="visually-hidden">Rendering QR...</span>
+                    </div>
+                    <img id="qrPreview" src="" alt="Generated QR Preview" class="img-fluid rounded shadow-sm max-h-260">
+                    <div id="previewEmptyPlaceholder" class="text-secondary d-none">
+                        <i class="bi bi-qr-code fs-1 opacity-50 mb-2"></i>
+                        <p class="small mb-0">Fill in details and click Generate</p>
+                    </div>
+                </div>
+
+                <!-- Preview Info -->
+                <div class="text-start mb-3 px-1">
+                    <div class="fw-semibold text-white text-truncate" id="previewTitleDisplay">Website Landing QR</div>
+                    <div class="text-secondary fs-xs text-truncate font-monospace" id="previewContentDisplay">https://example.com</div>
+                </div>
+
+                <!-- Download & Actions -->
+                <div class="d-flex gap-2">
+                    <a id="downloadBtn" href="#" download="qr_code.png" class="btn btn-success flex-grow-1 rounded-pill fw-semibold disabled">
+                        <i class="bi bi-download me-1"></i> Download PNG
+                    </a>
+                    <button type="button" class="btn btn-outline-light rounded-pill px-3" id="copyContentBtn" title="Copy Content">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Cloud Generations -->
+    <div class="card glass-card border-secondary-subtle shadow-lg p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-secondary-subtle mb-3">
+            <h5 class="fw-bold text-white mb-0">
+                <i class="bi bi-clock-history text-info me-2"></i>Recent Cloud QR Codes
+            </h5>
+            <a href="{{ url_for('history.history') }}" class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                View All History <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+        </div>
+
+        {% if recent_qrs %}
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle mb-0">
+                <thead>
+                    <tr class="text-secondary fs-xs border-secondary-subtle">
+                        <th scope="col" style="width: 70px;">PREVIEW</th>
+                        <th scope="col">TITLE & CONTENT</th>
+                        <th scope="col">TYPE</th>
+                        <th scope="col">COLORS</th>
+                        <th scope="col">CREATED</th>
+                        <th scope="col" class="text-end">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody id="recentTableBody">
+                    {% for qr in recent_qrs %}
+                    <tr id="qr-row-{{ qr.id }}" class="border-secondary-subtle">
+                        <td>
+                            <img src="{{ url_for('generator.get_qr_image', qr_id=qr.id) }}" alt="{{ qr.title }}" class="img-thumbnail bg-transparent border-secondary-subtle p-1" style="width: 48px; height: 48px; object-fit: contain;">
+                        </td>
+                        <td>
+                            <div class="fw-semibold text-white">{{ qr.title }}</div>
+                            <div class="text-secondary fs-xs font-monospace text-truncate max-w-260">{{ qr.content }}</div>
+                        </td>
+                        <td>
+                            {% if qr.qr_type == 'url' %}
+                                <span class="badge bg-info-subtle text-info rounded-pill">URL</span>
+                            {% elif qr.qr_type == 'email' %}
+                                <span class="badge bg-success-subtle text-success rounded-pill">Email</span>
+                            {% elif qr.qr_type == 'phone' %}
+                                <span class="badge bg-warning-subtle text-warning rounded-pill">Phone</span>
+                            {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill">Text</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-1">
+                                <span class="color-dot" style="background-color: {{ qr.foreground }}" title="Foreground: {{ qr.foreground }}"></span>
+                                <span class="color-dot border" style="background-color: {{ qr.background }}" title="Background: {{ qr.background }}"></span>
+                            </div>
+                        </td>
+                        <td class="text-secondary fs-xs">
+                            {{ qr.created_at.strftime('%b %d, %Y') }}
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('generator.download_qr', qr_id=qr.id) }}" class="btn btn-outline-light" title="Download PNG">
+                                    <i class="bi bi-download"></i>
+                                </a>
+                                <button type="button" class="btn btn-outline-danger delete-qr-btn" data-id="{{ qr.id }}" data-title="{{ qr.title }}" title="Delete from Cloud">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-secondary">
+            <i class="bi bi-qr-code fs-1 opacity-25 mb-3 d-block"></i>
+            <h6>No QR codes generated yet</h6>
+            <p class="small text-muted mb-0">Use the form above to generate and store your first cloud QR code!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    initDashboard();
+});
+</script>
+{% endblock %}
