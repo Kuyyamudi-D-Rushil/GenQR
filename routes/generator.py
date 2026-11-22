@@ -15,6 +15,10 @@ HEX_COLOR_REGEX = re.compile(r"^#[0-9A-Fa-f]{6}$")
 PHONE_ALLOWED_CHARS_REGEX = re.compile(r"^\+?[0-9\s\-\(\)\.]{7,25}$")
 MAX_QR_BYTES = 2048  # Sensible byte limit for QR Code Error Correction Level M
 
+# Enforced standard black & white color palette for all generated QR codes
+QR_FOREGROUND = "#000000"
+QR_BACKGROUND = "#FFFFFF"
+
 
 class QRCapacityError(Exception):
     """Raised when encoded content exceeds QR matrix capacity."""
@@ -82,8 +86,8 @@ def validate_phone_content(raw_phone: str):
     return f"{prefix}{digits}", None
 
 
-def validate_input(content: str, qr_type: str, foreground: str, background: str):
-    """Validate all generation parameters and semantic correctness."""
+def validate_input(content: str, qr_type: str, foreground: str = QR_FOREGROUND, background: str = QR_BACKGROUND):
+    """Validate payload content and QR type. Color arguments are accepted for backward compatibility but overridden to #000000 / #FFFFFF."""
     if not content:
         return "Content is required.", None
 
@@ -114,20 +118,14 @@ def validate_input(content: str, qr_type: str, foreground: str, background: str)
             return err, None
         normalized_payload = f"tel:{normalized_phone}"
 
-    if not HEX_COLOR_REGEX.fullmatch(foreground):
-        return "Foreground color must be a valid 6-digit hex code (e.g. #000000).", None
-
-    if not HEX_COLOR_REGEX.fullmatch(background):
-        return "Background color must be a valid 6-digit hex code (e.g. #FFFFFF).", None
-
-    if foreground.lower() == background.lower():
-        return "Foreground and background colors must be different for QR scanning.", None
-
     return None, normalized_payload
 
 
-def create_qr(payload: str, foreground: str, background: str):
-    """Generate a high-quality QR code PIL image in memory safely catching capacity errors."""
+def create_qr(payload: str, foreground: str = QR_FOREGROUND, background: str = QR_BACKGROUND):
+    """Generate a clean, high-contrast black-and-white QR code PIL image in memory.
+    
+    All QR codes strictly use traditional #000000 foreground and #FFFFFF background.
+    """
     try:
         qr = qrcode.QRCode(
             version=None,
@@ -138,9 +136,10 @@ def create_qr(payload: str, foreground: str, background: str):
         qr.add_data(payload)
         qr.make(fit=True)
 
+        # Enforce traditional black and white
         image = qr.make_image(
-            fill_color=foreground,
-            back_color=background
+            fill_color=QR_FOREGROUND,
+            back_color=QR_BACKGROUND
         ).convert("RGB")
         return image
     except (qrcode.exceptions.DataOverflowError, ValueError) as e:
@@ -159,7 +158,7 @@ def generate_page():
 @generator_bp.route("/api/generate", methods=["POST"])
 @login_required
 def generate():
-    """Generate a QR code, persist record in cloud database, and return PNG image."""
+    """Generate a QR code, persist record in cloud database, and return black & white PNG image."""
     data = request.get_json(silent=True) or {}
     if not data and request.form:
         data = request.form.to_dict()
@@ -167,8 +166,6 @@ def generate():
     raw_content = str(data.get("content", "")).strip()
     qr_type = str(data.get("qr_type", "text")).strip().lower()
     title = str(data.get("title", "")).strip()
-    foreground = str(data.get("foreground", "#000000")).strip()
-    background = str(data.get("background", "#FFFFFF")).strip()
 
     # Intelligent Safety Correction in backend:
     # If the user typed their URL into the title field and left content empty or default:
@@ -181,25 +178,25 @@ def generate():
     if not title:
         title = "My QR Code"
 
-    # Validate parameters and semantic content
-    error_msg, formatted_payload = validate_input(raw_content, qr_type, foreground, background)
+    # Validate parameters and semantic content (colors strictly enforced to B&W)
+    error_msg, formatted_payload = validate_input(raw_content, qr_type)
     if error_msg:
         return jsonify({"error": error_msg}), 400
 
     # Render image in memory first to verify capacity before database commit
     try:
-        image = create_qr(formatted_payload, foreground, background)
+        image = create_qr(formatted_payload)
     except QRCapacityError as e:
         return jsonify({"error": str(e)}), 400
 
-    # Persist in cloud PostgreSQL / SQLite with rollback error handling
+    # Persist in cloud PostgreSQL / SQLite with rollback error handling (always #000000 / #FFFFFF)
     qr_record = QRCode(
         user_id=current_user.id,
         title=title[:150] if title else "My QR Code",
         qr_type=qr_type,
-        content=raw_content,  # Store user-entered content for human display
-        foreground=foreground,
-        background=background,
+        content=raw_content,
+        foreground=QR_FOREGROUND,
+        background=QR_BACKGROUND,
     )
 
     try:
@@ -245,18 +242,16 @@ def preview():
     data = request.get_json(silent=True) or {}
     raw_content = str(data.get("content", "")).strip()
     qr_type = str(data.get("qr_type", "text")).strip().lower()
-    foreground = str(data.get("foreground", "#000000")).strip()
-    background = str(data.get("background", "#FFFFFF")).strip()
 
     if not raw_content:
         raw_content = "https://cloud-qr-generator.onrender.com"
 
-    error_msg, formatted_payload = validate_input(raw_content, qr_type, foreground, background)
+    error_msg, formatted_payload = validate_input(raw_content, qr_type)
     if error_msg:
         return jsonify({"error": error_msg}), 400
 
     try:
-        image = create_qr(formatted_payload, foreground, background)
+        image = create_qr(formatted_payload)
     except QRCapacityError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -270,23 +265,19 @@ def preview():
 @generator_bp.route("/api/qr/<int:qr_id>/image")
 @login_required
 def get_qr_image(qr_id: int):
-    """Regenerate and retrieve QR image on-the-fly from stored database record."""
+    """Regenerate and retrieve QR image on-the-fly in standard black & white."""
     record = QRCode.query.filter_by(
         id=qr_id,
         user_id=current_user.id
     ).first_or_404()
 
     # Re-normalize payload
-    _, formatted_payload = validate_input(record.content, record.qr_type, record.foreground, record.background)
+    _, formatted_payload = validate_input(record.content, record.qr_type)
     if not formatted_payload:
         formatted_payload = record.content
 
     try:
-        image = create_qr(
-            formatted_payload,
-            record.foreground,
-            record.background
-        )
+        image = create_qr(formatted_payload)
     except QRCapacityError as e:
         return jsonify({"error": str(e)}), 400
 
@@ -300,22 +291,18 @@ def get_qr_image(qr_id: int):
 @generator_bp.route("/api/qr/<int:qr_id>/download")
 @login_required
 def download_qr(qr_id: int):
-    """Download saved QR image as PNG attachment."""
+    """Download saved QR image as black & white PNG attachment."""
     record = QRCode.query.filter_by(
         id=qr_id,
         user_id=current_user.id
     ).first_or_404()
 
-    _, formatted_payload = validate_input(record.content, record.qr_type, record.foreground, record.background)
+    _, formatted_payload = validate_input(record.content, record.qr_type)
     if not formatted_payload:
         formatted_payload = record.content
 
     try:
-        image = create_qr(
-            formatted_payload,
-            record.foreground,
-            record.background
-        )
+        image = create_qr(formatted_payload)
     except QRCapacityError as e:
         return jsonify({"error": str(e)}), 400
 

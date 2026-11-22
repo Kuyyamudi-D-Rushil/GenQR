@@ -1,127 +1,105 @@
 {% extends "base.html" %}
 
-{% block title %}Cloud-Based QR Code Generator | Fast, Customizable & Cloud-Stored{% endblock %}
+{% block title %}CloudQR — Cloud-Based QR Code Generator{% endblock %}
 
 {% block content %}
 <!-- Hero Section -->
-<section class="hero-section py-5 position-relative overflow-hidden">
-    <div class="hero-glow-1"></div>
-    <div class="hero-glow-2"></div>
-    <div class="container py-4 position-relative">
+<section class="py-5 border-bottom bg-white">
+    <div class="container py-4">
         <div class="row align-items-center g-5">
             <div class="col-lg-6 text-center text-lg-start">
-                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-primary-subtle text-primary border border-primary-subtle mb-3 fs-xs fw-semibold">
-                    <span class="pulsing-dot"></span> Cloud-Native Micro-Architecture
+                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-light border text-secondary mb-3 fs-xs fw-semibold">
+                    <span class="rounded-circle bg-primary" style="width: 6px; height: 6px;"></span> Cloud-Native Web Application
                 </div>
-                <h1 class="display-4 fw-extrabold text-white mb-3 tracking-tight">
-                    Next-Gen QR Code Engine with <span class="text-primary-gradient">Persistent Cloud Storage</span>
+                <h1 class="display-5 fw-bold text-dark mb-3" style="letter-spacing: -0.03em;">
+                    Cloud-Based QR Code Generator with Persistent Storage
                 </h1>
                 <p class="lead text-secondary mb-4 fs-6">
-                    A complete cloud-hosted SaaS application demonstrating robust cloud data processing. Generate, customize, download, and retain your QR code assets securely in cloud-hosted PostgreSQL from any device.
+                    A cloud-hosted application demonstrating how modern cloud services accept user requests, encode data, store records in PostgreSQL, and maintain accessible history from anywhere.
                 </p>
-                <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start mb-4">
+                <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-start mb-4">
                     {% if current_user.is_authenticated %}
-                        <a href="{{ url_for('history.dashboard') }}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">
-                            <i class="bi bi-speedometer2 me-2"></i> Go to Dashboard
+                        <a href="{{ url_for('history.dashboard') }}" class="btn btn-primary">
+                            <i class="bi bi-grid-1x2 me-1"></i> Go to Dashboard
                         </a>
-                        <a href="{{ url_for('history.history') }}" class="btn btn-outline-light btn-lg rounded-pill px-4">
-                            <i class="bi bi-clock-history me-2"></i> View History
+                        <a href="{{ url_for('history.history') }}" class="btn btn-secondary-subtle">
+                            <i class="bi bi-clock-history me-1"></i> View History
                         </a>
                     {% else %}
-                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg rounded-pill px-4 shadow-sm">
-                            <i class="bi bi-rocket-takeoff me-2"></i> Create Free Account
+                        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+                            Create free account
                         </a>
-                        <a href="#playground" class="btn btn-outline-light btn-lg rounded-pill px-4">
-                            <i class="bi bi-play-circle me-2"></i> Try Interactive Demo
+                        <a href="#playground" class="btn btn-secondary-subtle">
+                            Try live preview
                         </a>
                     {% endif %}
                 </div>
-                <!-- Architecture Trust Badges -->
-                <div class="d-flex flex-wrap align-items-center gap-4 text-muted small pt-2 justify-content-center justify-content-lg-start">
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-shield-check text-success fs-5"></i>
-                        <span>Zero Data Loss</span>
+                <!-- Architecture Trust Items -->
+                <div class="d-flex flex-wrap align-items-center gap-4 text-secondary fs-xs pt-2 justify-content-center justify-content-lg-start">
+                    <div class="d-flex align-items-center gap-1">
+                        <i class="bi bi-check2 text-primary"></i>
+                        <span>Stateless Memory Engine</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-lightning-charge text-warning fs-5"></i>
-                        <span>Dynamic Memory Generation</span>
+                    <div class="d-flex align-items-center gap-1">
+                        <i class="bi bi-check2 text-primary"></i>
+                        <span>PostgreSQL Persistence</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <i class="bi bi-clouds text-info fs-5"></i>
-                        <span>Render + PostgreSQL</span>
+                    <div class="d-flex align-items-center gap-1">
+                        <i class="bi bi-check2 text-primary"></i>
+                        <span>Standard Black & White</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Hero Interactive Playground Preview -->
+            <!-- Hero Interactive Playground Preview (Stateless, B&W) -->
             <div class="col-lg-6" id="playground">
-                <div class="card glass-card border-secondary-subtle shadow-2xl p-4">
-                    <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-secondary-subtle mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="status-indicator online"></span>
-                            <span class="fw-semibold text-white">Live Generation Sandbox</span>
-                        </div>
-                        <span class="badge bg-secondary-subtle text-secondary rounded-pill">Instant Preview</span>
+                <div class="card p-4 shadow-sm">
+                    <div class="d-flex align-items-center justify-content-between pb-3 border-bottom mb-3">
+                        <div class="fw-semibold text-dark">Live Generation Sandbox</div>
+                        <span class="badge bg-secondary-subtle text-secondary">Instant Preview</span>
                     </div>
 
                     <form id="publicPreviewForm">
                         <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">SELECT DATA TYPE</label>
-                            <div class="btn-group w-100" role="group">
+                            <label class="form-label">Data Type</label>
+                            <div class="segmented-control" role="group">
                                 <input type="radio" class="btn-check" name="preview_type" id="type_url" value="url" checked>
-                                <label class="btn btn-outline-secondary btn-sm" for="type_url"><i class="bi bi-link-45deg me-1"></i>URL</label>
+                                <label class="segmented-item" for="type_url"><i class="bi bi-link-45deg me-1"></i>URL</label>
 
                                 <input type="radio" class="btn-check" name="preview_type" id="type_text" value="text">
-                                <label class="btn btn-outline-secondary btn-sm" for="type_text"><i class="bi bi-card-text me-1"></i>Text</label>
+                                <label class="segmented-item" for="type_text"><i class="bi bi-card-text me-1"></i>Text</label>
 
                                 <input type="radio" class="btn-check" name="preview_type" id="type_email" value="email">
-                                <label class="btn btn-outline-secondary btn-sm" for="type_email"><i class="bi bi-envelope me-1"></i>Email</label>
+                                <label class="segmented-item" for="type_email"><i class="bi bi-envelope me-1"></i>Email</label>
 
                                 <input type="radio" class="btn-check" name="preview_type" id="type_phone" value="phone">
-                                <label class="btn btn-outline-secondary btn-sm" for="type_phone"><i class="bi bi-telephone me-1"></i>Phone</label>
+                                <label class="segmented-item" for="type_phone"><i class="bi bi-telephone me-1"></i>Phone</label>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label for="previewContent" class="form-label text-muted small fw-semibold" id="previewContentLabel">TARGET URL</label>
-                            <input type="text" class="form-control bg-dark-subtle text-white border-secondary-subtle" id="previewContent" placeholder="https://example.com" value="https://cloud-qr-generator.onrender.com">
+                            <label for="previewContent" class="form-label" id="previewContentLabel">Target URL</label>
+                            <input type="text" class="form-control" id="previewContent" placeholder="https://google.com" value="https://cloud-qr-generator.onrender.com">
                         </div>
 
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="form-label text-muted small fw-semibold">FOREGROUND</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color border-0 p-0 bg-transparent cursor-pointer" id="previewFg" value="#4F46E5" title="Choose color">
-                                    <span class="small font-monospace text-secondary" id="previewFgText">#4F46E5</span>
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label text-muted small fw-semibold">BACKGROUND</label>
-                                <div class="d-flex align-items-center gap-2">
-                                    <input type="color" class="form-control form-control-color border-0 p-0 bg-transparent cursor-pointer" id="previewBg" value="#FFFFFF" title="Choose color">
-                                    <span class="small font-monospace text-secondary" id="previewBgText">#FFFFFF</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="text-center p-3 rounded bg-dark border border-secondary-subtle mb-3 position-relative">
+                        <div class="qr-preview-box text-center p-3 mb-3 position-relative">
                             <div id="previewSpinner" class="spinner-border text-primary d-none my-4" role="status">
-                                <span class="visually-hidden">Rendering...</span>
+                                <span class="visually-hidden">Generating...</span>
                             </div>
-                            <img id="publicQrImage" src="" alt="QR Preview" class="img-fluid rounded shadow-sm max-h-200">
+                            <img id="publicQrImage" src="" alt="QR Preview" class="img-fluid rounded" style="max-height: 180px; object-fit: contain;">
                         </div>
 
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-primary flex-grow-1 rounded-pill" id="publicGenerateBtn">
-                                <i class="bi bi-arrow-repeat me-1"></i> Update Preview
+                            <button type="button" class="btn btn-primary flex-grow-1" id="publicGenerateBtn">
+                                Update Preview
                             </button>
-                            <a id="publicDownloadBtn" href="#" download="preview_qr.png" class="btn btn-outline-light rounded-pill px-3">
+                            <a id="publicDownloadBtn" href="#" download="preview_qr.png" class="btn btn-secondary-subtle px-3" title="Download PNG">
                                 <i class="bi bi-download"></i>
                             </a>
                         </div>
                         <div class="text-center mt-2">
-                            <span class="text-muted fs-xs">
-                                <i class="bi bi-lock me-1"></i> Want to persist QR codes to the cloud? <a href="{{ url_for('auth.register') }}" class="text-primary text-decoration-none">Create a free account</a>
+                            <span class="text-secondary fs-xs">
+                                Want to save QR codes permanently? <a href="{{ url_for('auth.register') }}" class="text-primary text-decoration-none">Create a free account</a>
                             </span>
                         </div>
                     </form>
@@ -131,128 +109,85 @@
     </div>
 </section>
 
-<!-- Features Grid -->
-<section id="features" class="py-5 border-top border-secondary-subtle">
+<!-- Features Section -->
+<section id="features" class="py-5 border-bottom">
     <div class="container py-4">
         <div class="text-center max-w-700 mx-auto mb-5">
-            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 mb-2">Capabilities</span>
-            <h2 class="display-6 fw-bold text-white">Full-Stack Cloud QR Generation</h2>
-            <p class="text-secondary">Designed with production-grade separation of concerns: presentation layer, stateless application services, and persistent relational storage.</p>
+            <span class="badge bg-secondary-subtle text-secondary mb-2">Capabilities</span>
+            <h2 class="h3 fw-bold text-dark">Cloud-First QR Code Architecture</h2>
+            <p class="text-secondary small">Separation of concerns across presentation, stateless application compute, and relational storage.</p>
         </div>
 
         <div class="row g-4">
             <div class="col-md-4">
-                <div class="feature-card h-100 p-4 rounded-4 glass-card border-secondary-subtle">
-                    <div class="feature-icon-wrapper mb-3 bg-primary-subtle text-primary">
-                        <i class="bi bi-hdd-network fs-4"></i>
+                <div class="card h-100 p-4">
+                    <div class="nav-brand-icon mb-3">
+                        <i class="bi bi-database"></i>
                     </div>
-                    <h5 class="fw-bold text-white mb-2">Persistent Cloud DB</h5>
+                    <h6 class="fw-bold text-dark mb-1">Persistent Cloud Database</h6>
                     <p class="text-secondary small mb-0">
-                        Unlike ephemeral local filesystems that wipe data on deployment, metadata and generation configurations are securely stored in a managed PostgreSQL cloud database.
+                        QR records and metadata are persisted securely in PostgreSQL, preventing data loss across deployments and server restarts.
                     </p>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="feature-card h-100 p-4 rounded-4 glass-card border-secondary-subtle">
-                    <div class="feature-icon-wrapper mb-3 bg-info-subtle text-info">
-                        <i class="bi bi-palette fs-4"></i>
+                <div class="card h-100 p-4">
+                    <div class="nav-brand-icon mb-3">
+                        <i class="bi bi-cpu"></i>
                     </div>
-                    <h5 class="fw-bold text-white mb-2">Color Customization</h5>
+                    <h6 class="fw-bold text-dark mb-1">In-Memory Image Rendering</h6>
                     <p class="text-secondary small mb-0">
-                        Choose high-contrast brand colors with live hex synchronization. Generate custom foreground and background combinations with automated contrast validation.
+                        PNG images are dynamically compiled in memory via Python Pillow and streamed directly over HTTP without disk I/O bottlenecks.
                     </p>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="feature-card h-100 p-4 rounded-4 glass-card border-secondary-subtle">
-                    <div class="feature-icon-wrapper mb-3 bg-success-subtle text-success">
-                        <i class="bi bi-memory fs-4"></i>
+                <div class="card h-100 p-4">
+                    <div class="nav-brand-icon mb-3">
+                        <i class="bi bi-shield-check"></i>
                     </div>
-                    <h5 class="fw-bold text-white mb-2">Stateless Image Engine</h5>
+                    <h6 class="fw-bold text-dark mb-1">Secure Multi-Tenant Isolation</h6>
                     <p class="text-secondary small mb-0">
-                        Zero filesystem dependency. High-resolution PNG QR images are rendered on-the-fly directly in memory using Python Pillow and streamed directly to the browser.
+                        Protected with Flask-Login session management and Werkzeug password hashing. Users only see and manage their own QR codes.
                     </p>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="feature-card h-100 p-4 rounded-4 glass-card border-secondary-subtle">
-                    <div class="feature-icon-wrapper mb-3 bg-warning-subtle text-warning">
-                        <i class="bi bi-shield-lock fs-4"></i>
+                <div class="card h-100 p-4">
+                    <div class="nav-brand-icon mb-3">
+                        <i class="bi bi-qr-code"></i>
                     </div>
-                    <h5 class="fw-bold text-white mb-2">Authentication & Isolation</h5>
+                    <h6 class="fw-bold text-dark mb-1">Universal Scanning Standard</h6>
                     <p class="text-secondary small mb-0">
-                        Protected with Flask-Login and Werkzeug password hashing. Multi-tenant database schema ensures users can only access, regenerate, or delete their own QR assets.
+                        High-contrast black-on-white encoding guarantees maximum readability across all iOS and Android smartphone camera sensors.
                     </p>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="feature-card h-100 p-4 rounded-4 glass-card border-secondary-subtle">
-                    <div class="feature-icon-wrapper mb-3 bg-danger-subtle text-danger">
-                        <i class="bi bi-qr-code fs-4"></i>
+                <div class="card h-100 p-4">
+                    <div class="nav-brand-icon mb-3">
+                        <i class="bi bi-link-45deg"></i>
                     </div>
-                    <h5 class="fw-bold text-white mb-2">Multi-Format Encoding</h5>
+                    <h6 class="fw-bold text-dark mb-1">Multi-Type Validation</h6>
                     <p class="text-secondary small mb-0">
-                        Encodes standard web URLs, plain text memos, email <code>mailto:</code> links with subjects, and direct phone dial <code>tel:</code> standards readable by iOS and Android camera apps.
+                        Semantic validation for URLs, email addresses, phone numbers, and plain text with automatic scheme normalization.
                     </p>
                 </div>
             </div>
 
             <div class="col-md-4">
-                <div class="feature-card h-100 p-4 rounded-4 glass-card border-secondary-subtle">
-                    <div class="feature-icon-wrapper mb-3 bg-purple-subtle text-purple">
-                        <i class="bi bi-clock-history fs-4"></i>
+                <div class="card h-100 p-4">
+                    <div class="nav-brand-icon mb-3">
+                        <i class="bi bi-clock-history"></i>
                     </div>
-                    <h5 class="fw-bold text-white mb-2">Centralized QR History</h5>
+                    <h6 class="fw-bold text-dark mb-1">Centralized QR History</h6>
                     <p class="text-secondary small mb-0">
-                        Filter, search, inspect, regenerate, and manage your complete portfolio of QR codes from an intuitive SaaS dashboard anytime, from anywhere in the world.
+                        Search, filter by type, inspect encoded content, and download your entire QR portfolio anytime from any device.
                     </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- 3-Tier Architecture Diagram Section -->
-<section id="architecture" class="py-5 border-top border-secondary-subtle bg-dark-gradient">
-    <div class="container py-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-            <span class="badge bg-info-subtle text-info rounded-pill px-3 py-1 mb-2">Cloud Architecture</span>
-            <h2 class="display-6 fw-bold text-white">How The Cloud System Works</h2>
-            <p class="text-secondary">Three-layer cloud architecture designed for scalability, security, and persistence.</p>
-        </div>
-
-        <div class="row g-4 align-items-center">
-            <div class="col-lg-4">
-                <div class="arch-box p-4 rounded-4 border border-primary-subtle glass-card text-center">
-                    <div class="badge bg-primary text-white rounded-pill px-3 py-1 mb-2">Layer 1</div>
-                    <h5 class="fw-bold text-white">Presentation Layer</h5>
-                    <p class="text-secondary small mb-2">Browser &middot; HTML5 &middot; CSS3 &middot; Bootstrap 5 &middot; Fetch API</p>
-                    <hr class="border-secondary-subtle">
-                    <span class="text-muted fs-xs">Asynchronous JSON / Blob HTTP requests with CSRF validation.</span>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="arch-box p-4 rounded-4 border border-info-subtle glass-card text-center">
-                    <div class="badge bg-info text-dark rounded-pill px-3 py-1 mb-2">Layer 2</div>
-                    <h5 class="fw-bold text-white">Application Layer</h5>
-                    <p class="text-secondary small mb-2">Python 3.12 &middot; Flask &middot; Gunicorn &middot; Pillow &middot; qrcode</p>
-                    <hr class="border-secondary-subtle">
-                    <span class="text-muted fs-xs">Stateless compute on Render Web Service. Validates input and streams PNGs.</span>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="arch-box p-4 rounded-4 border border-warning-subtle glass-card text-center">
-                    <div class="badge bg-warning text-dark rounded-pill px-3 py-1 mb-2">Layer 3</div>
-                    <h5 class="fw-bold text-white">Cloud Data Layer</h5>
-                    <p class="text-secondary small mb-2">Render Managed PostgreSQL &middot; SQLAlchemy ORM</p>
-                    <hr class="border-secondary-subtle">
-                    <span class="text-muted fs-xs">Persistent relational storage for user accounts, credentials, and QR metadata.</span>
                 </div>
             </div>
         </div>
@@ -260,24 +195,24 @@
 </section>
 
 <!-- Call to Action Banner -->
-<section class="py-5 text-center">
+<section class="py-5 text-center bg-white">
     <div class="container py-4">
-        <div class="card glass-card p-5 border-primary-subtle max-w-800 mx-auto shadow-2xl">
-            <h2 class="fw-bold text-white mb-3">Ready to Deploy Your Own Cloud QR Assets?</h2>
-            <p class="text-secondary mb-4">
-                Sign up in seconds, generate customized QR codes, and access your history anywhere.
+        <div class="max-w-600 mx-auto">
+            <h3 class="fw-bold text-dark mb-2">Ready to generate your cloud QR codes?</h3>
+            <p class="text-secondary small mb-4">
+                Create a free account in seconds and manage all your QR assets with persistent cloud storage.
             </p>
-            <div class="d-flex justify-content-center gap-3">
+            <div class="d-flex justify-content-center gap-2">
                 {% if current_user.is_authenticated %}
-                    <a href="{{ url_for('history.dashboard') }}" class="btn btn-primary rounded-pill px-4 py-2">
-                        Open Dashboard <i class="bi bi-arrow-right ms-1"></i>
+                    <a href="{{ url_for('history.dashboard') }}" class="btn btn-primary">
+                        Open Dashboard
                     </a>
                 {% else %}
-                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary rounded-pill px-4 py-2">
-                        Get Started Free <i class="bi bi-arrow-right ms-1"></i>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+                        Get started free
                     </a>
-                    <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light rounded-pill px-4 py-2">
-                        Log In
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-secondary-subtle">
+                        Sign in
                     </a>
                 {% endif %}
             </div>

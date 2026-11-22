@@ -1,6 +1,7 @@
 /**
  * CloudQR Client Engine
- * Asynchronous QR Generation, Cloud Persistence, Color Customizer, History Management & XSS-Safe Modals
+ * Clean SaaS Interface: Asynchronous QR Generation, Cloud Persistence,
+ * History Management & XSS-Safe Modals (Black & White Standard)
  */
 
 // Helper to extract CSRF Token from meta tag
@@ -40,7 +41,7 @@ function updateTypeInputConfig(type, elements) {
 }
 
 /**
- * Dashboard QR Generator Initialization
+ * Dashboard & Studio QR Generator Initialization
  */
 function initDashboard() {
     const form = document.getElementById("dashboardGenerateForm");
@@ -48,11 +49,6 @@ function initDashboard() {
     const contentInput = document.getElementById("qrContent");
     const contentLabel = document.getElementById("qrContentLabel");
     const contentHelper = document.getElementById("qrContentHelper");
-
-    const fgColor = document.getElementById("qrForeground");
-    const fgHex = document.getElementById("qrForegroundHex");
-    const bgColor = document.getElementById("qrBackground");
-    const bgHex = document.getElementById("qrBackgroundHex");
 
     const previewImg = document.getElementById("qrPreview");
     const previewSpinner = document.getElementById("renderSpinner");
@@ -63,44 +59,7 @@ function initDashboard() {
     const copyBtn = document.getElementById("copyContentBtn");
     const generateSubmitBtn = document.getElementById("generateSubmitBtn");
 
-    // Sync Color Pickers and Hex Inputs
-    function syncColors() {
-        if (fgColor && fgHex) {
-            fgColor.addEventListener("input", () => { fgHex.value = fgColor.value.toUpperCase(); });
-            fgHex.addEventListener("input", () => {
-                if (/^#[0-9A-Fa-f]{6}$/.test(fgHex.value)) {
-                    fgColor.value = fgHex.value;
-                }
-            });
-        }
-        if (bgColor && bgHex) {
-            bgColor.addEventListener("input", () => { bgHex.value = bgColor.value.toUpperCase(); });
-            bgHex.addEventListener("input", () => {
-                if (/^#[0-9A-Fa-f]{6}$/.test(bgHex.value)) {
-                    bgColor.value = bgHex.value;
-                }
-            });
-        }
-    }
-    syncColors();
-
-    // Preset color buttons
-    document.querySelectorAll(".btn-preset-dot").forEach(btn => {
-        btn.addEventListener("click", () => {
-            const fg = btn.getAttribute("data-fg");
-            const bg = btn.getAttribute("data-bg");
-            if (fg && fgColor && fgHex) {
-                fgColor.value = fg;
-                fgHex.value = fg.toUpperCase();
-            }
-            if (bg && bgColor && bgHex) {
-                bgColor.value = bg;
-                bgHex.value = bg.toUpperCase();
-            }
-        });
-    });
-
-    // QR Type radio change handler
+    // QR Type segmented radio change handler
     document.querySelectorAll('input[name="qrType"]').forEach(radio => {
         radio.addEventListener("change", (e) => {
             updateTypeInputConfig(e.target.value, {
@@ -111,7 +70,7 @@ function initDashboard() {
         });
     });
 
-    // Copy button
+    // Copy content button
     if (copyBtn && contentInput) {
         copyBtn.addEventListener("click", () => {
             navigator.clipboard.writeText(contentInput.value).then(() => {
@@ -137,7 +96,7 @@ function initDashboard() {
         });
     }
 
-    // Submit handler: Generate and Save to Cloud
+    // Submit handler: Generate and Save to Cloud (Strictly Black & White)
     if (form) {
         form.addEventListener("submit", async function(e) {
             e.preventDefault();
@@ -146,11 +105,9 @@ function initDashboard() {
             const qrType = selectedTypeRadio ? selectedTypeRadio.value : "url";
             let title = (titleInput ? titleInput.value : "").trim();
             let content = (contentInput ? contentInput.value : "").trim();
-            const foreground = (fgColor ? fgColor.value : "#000000").trim();
-            const background = (bgColor ? bgColor.value : "#FFFFFF").trim();
 
             // Intelligent Safety Correction:
-            // If user entered a URL into the title field and left content empty or default:
+            // If user entered a URL into the title field and left content empty or default
             if (!content && title) {
                 content = title;
                 title = "My QR Code";
@@ -175,17 +132,12 @@ function initDashboard() {
                 title = "My QR Code";
             }
 
-            if (foreground.toLowerCase() === background.toLowerCase()) {
-                alert("Foreground and background colors must be different for QR scanners to read the code.");
-                return;
-            }
-
             // UI Loading state
             if (previewSpinner) previewSpinner.classList.remove("d-none");
             if (previewImg) previewImg.classList.add("opacity-25");
             if (previewStatus) {
                 previewStatus.textContent = "Generating...";
-                previewStatus.className = "badge bg-warning-subtle text-warning rounded-pill";
+                previewStatus.className = "badge bg-warning-subtle text-warning";
             }
             if (generateSubmitBtn) {
                 generateSubmitBtn.disabled = true;
@@ -202,9 +154,7 @@ function initDashboard() {
                     body: JSON.stringify({
                         title: title,
                         qr_type: qrType,
-                        content: content,
-                        foreground: foreground,
-                        background: background
+                        content: content
                     })
                 });
 
@@ -222,7 +172,7 @@ function initDashboard() {
                 const imageBlob = await response.blob();
                 activeBlobUrl = URL.createObjectURL(imageBlob);
 
-                // Update Preview image & info safely using textContent
+                // Update Preview image & info safely
                 if (previewImg) {
                     previewImg.src = activeBlobUrl;
                     previewImg.classList.remove("opacity-25", "d-none");
@@ -244,12 +194,12 @@ function initDashboard() {
 
                 if (previewStatus) {
                     previewStatus.textContent = "Saved to Cloud";
-                    previewStatus.className = "badge bg-success-subtle text-success rounded-pill";
+                    previewStatus.className = "badge bg-success-subtle text-success";
                 }
 
                 // Reload smoothly if on dashboard to show in recent table
                 const newQrId = response.headers.get("X-QR-ID");
-                if (newQrId) {
+                if (newQrId && document.getElementById("recentTableBody")) {
                     setTimeout(() => {
                         window.location.reload();
                     }, 1200);
@@ -261,7 +211,7 @@ function initDashboard() {
                 if (previewSpinner) previewSpinner.classList.add("d-none");
                 if (generateSubmitBtn) {
                     generateSubmitBtn.disabled = false;
-                    generateSubmitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Generate & Save to PostgreSQL';
+                    generateSubmitBtn.innerHTML = '<i class="bi bi-cloud-arrow-up me-1"></i> Generate & Save to Cloud';
                 }
             }
         });
@@ -272,31 +222,15 @@ function initDashboard() {
 }
 
 /**
- * Public Landing Page Preview Sandbox
+ * Public Landing Page Preview Sandbox (Stateless, Black & White)
  */
 function initLandingPreview() {
-    const previewForm = document.getElementById("publicPreviewForm");
     const previewInput = document.getElementById("previewContent");
     const previewLabel = document.getElementById("previewContentLabel");
-    const previewFg = document.getElementById("previewFg");
-    const previewFgText = document.getElementById("previewFgText");
-    const previewBg = document.getElementById("previewBg");
-    const previewBgText = document.getElementById("previewBgText");
     const previewImg = document.getElementById("publicQrImage");
     const previewSpinner = document.getElementById("previewSpinner");
     const generateBtn = document.getElementById("publicGenerateBtn");
     const downloadBtn = document.getElementById("publicDownloadBtn");
-
-    if (previewFg && previewFgText) {
-        previewFg.addEventListener("input", () => {
-            previewFgText.textContent = previewFg.value.toUpperCase();
-        });
-    }
-    if (previewBg && previewBgText) {
-        previewBg.addEventListener("input", () => {
-            previewBgText.textContent = previewBg.value.toUpperCase();
-        });
-    }
 
     document.querySelectorAll('input[name="preview_type"]').forEach(radio => {
         radio.addEventListener("change", (e) => {
@@ -312,8 +246,8 @@ function initLandingPreview() {
         const selectedType = document.querySelector('input[name="preview_type"]:checked');
         const qrType = selectedType ? selectedType.value : "url";
         const content = previewInput ? previewInput.value.trim() : "https://cloud-qr-generator.onrender.com";
-        const fg = previewFg ? previewFg.value : "#4F46E5";
-        const bg = previewBg ? previewBg.value : "#FFFFFF";
+
+        if (!content) return;
 
         if (previewSpinner) previewSpinner.classList.remove("d-none");
         if (previewImg) previewImg.classList.add("opacity-25");
@@ -326,9 +260,7 @@ function initLandingPreview() {
                 },
                 body: JSON.stringify({
                     content: content,
-                    qr_type: qrType,
-                    foreground: fg,
-                    background: bg
+                    qr_type: qrType
                 })
             });
 
@@ -406,7 +338,7 @@ function attachDeleteHandlers() {
                         liveRegion.textContent = `QR code "${qrTitle}" was deleted successfully.`;
                     }
 
-                    // Update visible record badges
+                    // Update visible record badges and stat cards
                     if (resData.remaining_count !== undefined) {
                         const totalBadge = document.getElementById("historyTotalBadge");
                         if (totalBadge) {
@@ -415,6 +347,10 @@ function attachDeleteHandlers() {
                         const statsCount = document.getElementById("statsTotalCount");
                         if (statsCount) {
                             statsCount.textContent = resData.remaining_count;
+                        }
+                        const statsSavedCount = document.getElementById("statsSavedCount");
+                        if (statsSavedCount) {
+                            statsSavedCount.textContent = resData.remaining_count;
                         }
                     }
 
@@ -426,7 +362,7 @@ function attachDeleteHandlers() {
                         card.remove();
 
                         // Check if grid is now empty
-                        const remainingCards = document.querySelectorAll("#historyCardsGrid .col-md-6");
+                        const remainingCards = document.querySelectorAll("#historyCardsGrid .col-md-6, #historyCardsGrid .col-lg-4");
                         if (remainingCards.length === 0) {
                             const emptyState = document.getElementById("historyEmptyState");
                             if (emptyState) {

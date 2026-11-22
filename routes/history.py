@@ -30,15 +30,16 @@ def dashboard():
         QRCode.created_at >= today_start
     ).count()
 
-    # Most recent 6 QR codes with deterministic secondary sort
+    # Most recent 5 QR codes with deterministic secondary sort
     recent_qrs = QRCode.query.filter_by(user_id=user_id).order_by(
         QRCode.created_at.desc(),
         QRCode.id.desc()
-    ).limit(6).all()
+    ).limit(5).all()
 
     stats = {
         "total": total_qrs,
         "today": today_count,
+        "saved": total_qrs,
         "url": url_count,
         "text": text_count,
         "email": email_count,

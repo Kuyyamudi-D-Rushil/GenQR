@@ -1,27 +1,25 @@
 {% extends "base.html" %}
 
-{% block title %}Account & Profile Settings | CloudQR{% endblock %}
+{% block title %}Account Settings | CloudQR{% endblock %}
 
 {% block content %}
 <div class="container py-4">
     <!-- Header with Breadcrumbs & Action -->
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="page-header d-flex flex-wrap align-items-center justify-content-between gap-3">
         <div>
             <div class="d-flex align-items-center gap-2 mb-1">
                 <a href="{{ url_for('history.dashboard') }}" class="text-secondary text-decoration-none small">
                     <i class="bi bi-arrow-left me-1"></i> Dashboard
                 </a>
-                <span class="text-secondary small">/</span>
-                <span class="text-white small fw-semibold">User Profile</span>
+                <span class="text-muted small">/</span>
+                <span class="text-dark small fw-medium">Settings</span>
             </div>
-            <h2 class="fw-bold text-white mb-0 d-flex align-items-center gap-2">
-                Account & Security Settings
-                <span class="badge bg-primary-subtle text-primary fs-xs rounded-pill">Cloud Identity</span>
-            </h2>
+            <h1 class="page-title">Account & Security Settings</h1>
+            <p class="page-subtitle">Manage your profile details and cloud authentication security</p>
         </div>
         <div>
-            <a href="{{ url_for('history.dashboard') }}" class="btn btn-outline-light rounded-pill px-4">
-                <i class="bi bi-speedometer2 me-1"></i> Return to Dashboard
+            <a href="{{ url_for('history.dashboard') }}" class="btn btn-secondary-subtle btn-sm">
+                <i class="bi bi-grid-1x2 me-1"></i> Dashboard
             </a>
         </div>
     </div>
@@ -29,122 +27,98 @@
     <div class="row g-4">
         <!-- User Profile Card (Left Column) -->
         <div class="col-lg-5">
-            <div class="card glass-card border-secondary-subtle shadow-lg p-4 mb-4">
-                <div class="text-center pb-4 border-bottom border-secondary-subtle mb-4">
-                    <div class="user-avatar-circle mx-auto mb-3" style="width: 72px; height: 72px; font-size: 2rem;">
+            <div class="card p-4 mb-4">
+                <div class="text-center pb-4 border-bottom mb-4">
+                    <div class="user-avatar-circle mx-auto mb-3" style="width: 64px; height: 64px; font-size: 1.5rem;">
                         {{ user.username[0]|upper }}
                     </div>
-                    <h4 class="fw-bold text-white mb-1">{{ user.username }}</h4>
+                    <h5 class="fw-bold text-dark mb-1">{{ user.username }}</h5>
                     <span class="text-secondary small font-monospace">{{ user.email }}</span>
-                    <div class="mt-3">
-                        <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill px-3 py-1">
-                            <i class="bi bi-shield-check me-1"></i> Active Cloud Account
-                        </span>
+                    <div class="mt-2">
+                        <span class="badge bg-secondary-subtle text-secondary">Active Account</span>
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="text-muted fs-xs fw-semibold">ACCOUNT ID</label>
-                    <div class="font-monospace text-white small bg-dark p-2 rounded border border-secondary-subtle">
-                        #{{ user.id }} &middot; Tenant ID
+                    <div class="text-secondary fs-xs fw-semibold mb-1">ACCOUNT ID</div>
+                    <div class="font-monospace small text-dark bg-light p-2 rounded border">#{{ user.id }}</div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="text-secondary fs-xs fw-semibold mb-1">REGISTRATION DATE</div>
+                    <div class="small text-dark bg-light p-2 rounded border">
+                        <i class="bi bi-calendar3 me-2 text-secondary"></i>
+                        {{ user.created_at.strftime('%B %d, %Y') if user.created_at else 'Active' }}
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="text-muted fs-xs fw-semibold">REGISTRATION DATE</label>
-                    <div class="text-white small bg-dark p-2 rounded border border-secondary-subtle">
-                        <i class="bi bi-calendar3 me-2 text-info"></i>
-                        {{ user.created_at.strftime('%B %d, %Y - %I:%M %p UTC') if user.created_at else 'Active' }}
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="text-muted fs-xs fw-semibold">CLOUD DATABASE TIER</label>
-                    <div class="text-white small bg-dark p-2 rounded border border-secondary-subtle d-flex align-items-center justify-content-between">
-                        <span><i class="bi bi-database text-warning me-2"></i>Render Managed PostgreSQL</span>
-                        <span class="badge bg-primary rounded-pill">Persistent</span>
+                    <div class="text-secondary fs-xs fw-semibold mb-1">PERSISTENT STORAGE</div>
+                    <div class="small text-dark bg-light p-2 rounded border d-flex align-items-center justify-content-between">
+                        <span><i class="bi bi-database me-2 text-secondary"></i>PostgreSQL</span>
+                        <span class="badge bg-secondary-subtle text-secondary">Active</span>
                     </div>
                 </div>
 
                 <div class="mb-4">
-                    <label class="text-muted fs-xs fw-semibold">STORED QR ASSETS</label>
-                    <div class="text-white small bg-dark p-2 rounded border border-secondary-subtle d-flex align-items-center justify-content-between">
-                        <span><i class="bi bi-qr-code text-primary me-2"></i>Total QR Records</span>
-                        <span class="badge bg-primary-subtle text-primary rounded-pill">{{ total_user_qrs }}</span>
+                    <div class="text-secondary fs-xs fw-semibold mb-1">STORED QR RECORDS</div>
+                    <div class="small text-dark bg-light p-2 rounded border d-flex align-items-center justify-content-between">
+                        <span><i class="bi bi-qr-code me-2 text-secondary"></i>Total Saved</span>
+                        <span class="badge bg-primary text-white">{{ total_user_qrs }}</span>
                     </div>
                 </div>
 
-                <a href="{{ url_for('history.history') }}" class="btn btn-outline-primary w-100 rounded-pill py-2">
-                    <i class="bi bi-collection me-1"></i> Manage Saved Assets
+                <a href="{{ url_for('history.history') }}" class="btn btn-secondary-subtle w-100 btn-sm">
+                    <i class="bi bi-clock-history me-1"></i> View Saved QR Codes
                 </a>
             </div>
         </div>
 
         <!-- Security & Password Management (Right Column) -->
         <div class="col-lg-7">
-            <div class="card glass-card border-secondary-subtle shadow-lg p-4 mb-4">
-                <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-secondary-subtle mb-4">
-                    <h5 class="fw-bold text-white mb-0">
-                        <i class="bi bi-key text-warning me-2"></i>Update Account Password
-                    </h5>
-                    <span class="badge bg-warning-subtle text-warning rounded-pill">12+ Characters</span>
+            <div class="card p-4 mb-4">
+                <div class="pb-3 border-bottom mb-4">
+                    <h5 class="fw-bold text-dark mb-1">Update Password</h5>
+                    <p class="text-secondary small mb-0">Ensure your account uses a secure password with at least 12 characters</p>
                 </div>
 
                 <form method="POST" action="{{ url_for('auth.profile') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
                     <div class="mb-3">
-                        <label for="current_password" class="form-label text-muted small fw-semibold">CURRENT PASSWORD</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
-                                <i class="bi bi-lock"></i>
-                            </span>
-                            <input type="password" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="current_password" name="current_password" placeholder="Enter your current password" required>
-                        </div>
+                        <label for="current_password" class="form-label">Current password</label>
+                        <input type="password" class="form-control" id="current_password" name="current_password" placeholder="Enter current password" required>
                     </div>
 
                     <div class="mb-3">
-                        <label for="new_password" class="form-label text-muted small fw-semibold">NEW PASSWORD (MIN 12 CHARACTERS)</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
-                                <i class="bi bi-shield-lock"></i>
-                            </span>
-                            <input type="password" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="new_password" name="new_password" placeholder="••••••••••••" required minlength="12">
-                        </div>
-                        <div class="form-text text-muted fs-xs">Choose a strong, unique password with at least 12 characters.</div>
+                        <label for="new_password" class="form-label">New password <span class="text-secondary fw-normal">(min 12 characters)</span></label>
+                        <input type="password" class="form-control" id="new_password" name="new_password" placeholder="••••••••••••" required minlength="12">
                     </div>
 
                     <div class="mb-4">
-                        <label for="confirm_password" class="form-label text-muted small fw-semibold">CONFIRM NEW PASSWORD</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-dark-subtle border-secondary-subtle text-secondary">
-                                <i class="bi bi-shield-check"></i>
-                            </span>
-                            <input type="password" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="confirm_password" name="confirm_password" placeholder="••••••••••••" required minlength="12">
-                        </div>
+                        <label for="confirm_password" class="form-label">Confirm new password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="••••••••••••" required minlength="12">
                     </div>
 
-                    <button type="submit" class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm">
-                        <i class="bi bi-check2-circle me-1"></i> Save New Password
+                    <button type="submit" class="btn btn-primary">
+                        Update password
                     </button>
                 </form>
             </div>
 
-            <!-- Cloud Security Specifications -->
-            <div class="card glass-card border-secondary-subtle p-4 shadow-sm">
-                <h6 class="fw-bold text-white mb-3">
-                    <i class="bi bi-shield-shaded text-info me-2"></i>Cloud Security Standards Active
-                </h6>
+            <!-- Security Specifications -->
+            <div class="card p-4">
+                <h6 class="fw-bold text-dark mb-3">Security Standards</h6>
                 <div class="row g-3 text-secondary small">
                     <div class="col-sm-6">
-                        <div class="p-3 bg-dark rounded border border-secondary-subtle h-100">
-                            <div class="fw-semibold text-white mb-1"><i class="bi bi-cookie text-success me-1"></i> Session Cookies</div>
-                            <div>Configured with <code>HttpOnly=True</code>, <code>SameSite=Lax</code>, and conditional <code>Secure</code> flags.</div>
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="fw-semibold text-dark mb-1"><i class="bi bi-shield-check text-success me-1"></i> Session Cookies</div>
+                            <div>Protected with <code>HttpOnly</code>, <code>SameSite=Lax</code>, and secure production headers.</div>
                         </div>
                     </div>
                     <div class="col-sm-6">
-                        <div class="p-3 bg-dark rounded border border-secondary-subtle h-100">
-                            <div class="fw-semibold text-white mb-1"><i class="bi bi-hash text-warning me-1"></i> Password Hashing</div>
+                        <div class="p-3 bg-light rounded border h-100">
+                            <div class="fw-semibold text-dark mb-1"><i class="bi bi-key text-primary me-1"></i> Password Hashing</div>
                             <div>Salted PBKDF2/SHA-256 via Werkzeug. Plaintext passwords never reach storage.</div>
                         </div>
                     </div>

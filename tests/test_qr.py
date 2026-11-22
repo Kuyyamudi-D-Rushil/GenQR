@@ -173,42 +173,45 @@ def test_generate_qr_validation_errors(auth_client):
     r1 = client.post("/api/generate", json={
         "title": "Empty",
         "qr_type": "url",
-        "content": "",
-        "foreground": "#000000",
-        "background": "#FFFFFF"
+        "content": ""
     })
     assert r1.status_code == 400
-
-    # Same foreground and background
-    r2 = client.post("/api/generate", json={
-        "title": "Same colors",
-        "qr_type": "text",
-        "content": "Sample text",
-        "foreground": "#000000",
-        "background": "#000000"
-    })
-    assert r2.status_code == 400
-    assert "different" in r2.get_json()["error"].lower()
-
-    # Invalid hex color
-    r3 = client.post("/api/generate", json={
-        "title": "Bad Hex",
-        "qr_type": "text",
-        "content": "Sample text",
-        "foreground": "blue",
-        "background": "#FFFFFF"
-    })
-    assert r3.status_code == 400
 
     # Invalid QR type
     r4 = client.post("/api/generate", json={
         "title": "Bad Type",
         "qr_type": "invalid_type",
-        "content": "Sample text",
-        "foreground": "#000000",
-        "background": "#FFFFFF"
+        "content": "Sample text"
     })
     assert r4.status_code == 400
+
+
+def test_backend_enforces_black_and_white_even_with_color_payload(auth_client):
+    """Verify backend completely ignores requested colors and strictly produces black (#000000) on white (#FFFFFF)."""
+    import io
+    from PIL import Image
+
+    client, _ = auth_client
+
+    # Send neon colors in request
+    response = client.post("/api/generate", json={
+        "title": "Color Override Test",
+        "qr_type": "url",
+        "content": "https://example.com/color-test",
+        "foreground": "#FF0000",
+        "background": "#00FF00"
+    })
+
+    assert response.status_code == 200
+    assert response.mimetype == "image/png"
+
+    # Analyze all unique RGB pixels in the generated image
+    img = Image.open(io.BytesIO(response.data)).convert("RGB")
+    colors = img.getcolors(maxcolors=256)
+    unique_rgbs = {rgb for count, rgb in colors}
+
+    # Must contain ONLY pure black (0, 0, 0) and pure white (255, 255, 255)
+    assert unique_rgbs.issubset({(0, 0, 0), (255, 255, 255)}), f"Found non-black/white colors: {unique_rgbs}"
 
 
 def test_retrieve_qr_image_dynamic(auth_client, app):
