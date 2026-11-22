@@ -4,7 +4,7 @@
 [![Flask](https://img.shields.io/badge/Flask-3.1.3-black.svg)](https://flask.palletsprojects.com/)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL-336791.svg)](https://www.postgresql.org/)
 [![Cloud](https://img.shields.io/badge/Hosted%20On-Render-46E3B7.svg)](https://render.com/)
-[![Tests](https://img.shields.io/badge/Tests-37%20Passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-41%20Passed-brightgreen.svg)]()
 
 > A production-grade cloud computing application demonstrating stateless web application deployment, managed cloud relational database persistence, secure multi-tenant authentication, and dynamic on-demand QR code generation using **Python Flask**, **Render**, and **Managed PostgreSQL**.
 
@@ -303,7 +303,7 @@ gunicorn app:app
 
 ## 13. Testing Instructions
 
-The test suite contains 37 automated tests verifying authentication, semantic input validation, database rollbacks, computer-vision QR decoding, and health check probes:
+The test suite contains 41 automated tests verifying authentication, semantic input validation, database rollbacks, computer-vision QR decoding, and health check probes:
 
 ```powershell
 # On Windows PowerShell:
@@ -316,44 +316,48 @@ python -m pytest -v
 ### Test Suite Execution Output:
 ```text
 tests/test_auth.py::test_register_success PASSED                         [  2%]
-tests/test_auth.py::test_register_duplicate_email PASSED                 [  5%]
-tests/test_auth.py::test_register_password_mismatch PASSED               [  8%]
-tests/test_auth.py::test_register_short_password PASSED                  [ 10%]
-tests/test_auth.py::test_register_integrity_error_rollback PASSED        [ 13%]
-tests/test_auth.py::test_login_success_and_logout_post_only PASSED       [ 16%]
-tests/test_auth.py::test_login_invalid_credentials PASSED                [ 18%]
-tests/test_auth.py::test_profile_page_access_and_password_update PASSED  [ 21%]
-tests/test_history.py::test_dashboard_stats PASSED                       [ 24%]
-tests/test_history.py::test_history_filtering PASSED                     [ 27%]
-tests/test_history.py::test_history_pagination PASSED                    [ 29%]
-tests/test_history.py::test_history_xss_safe_rendering PASSED            [ 32%]
-tests/test_history.py::test_delete_qr_record PASSED                      [ 35%]
-tests/test_history.py::test_delete_qr_db_error_rollback PASSED           [ 37%]
-tests/test_history.py::test_cross_user_delete_prevention PASSED          [ 40%]
-tests/test_history.py::test_dashboard_get_creates_no_qr_records PASSED   [ 43%]
-tests/test_history.py::test_dashboard_today_metric PASSED                [ 45%]
-tests/test_qr.py::test_generate_qr_url PASSED                            [ 48%]
-tests/test_qr.py::test_semantic_url_validation PASSED                    [ 51%]
-tests/test_qr.py::test_semantic_email_validation PASSED                  [ 54%]
-tests/test_qr.py::test_semantic_phone_validation PASSED                  [ 56%]
-tests/test_qr.py::test_oversized_unicode_capacity_overflow PASSED        [ 59%]
-tests/test_qr.py::test_generate_db_error_rollback PASSED                 [ 62%]
-tests/test_qr.py::test_generate_qr_validation_errors PASSED              [ 64%]
-tests/test_qr.py::test_retrieve_qr_image_dynamic PASSED                  [ 67%]
-tests/test_qr.py::test_cross_user_isolation_prevent_access PASSED        [ 70%]
-tests/test_qr.py::test_public_preview_endpoint PASSED                    [ 72%]
-tests/test_qr.py::test_qr_decoding_verification_url PASSED               [ 75%]
-tests/test_qr.py::test_qr_decoding_verification_text PASSED              [ 78%]
-tests/test_qr.py::test_qr_decoding_verification_email PASSED             [ 81%]
-tests/test_qr.py::test_qr_decoding_verification_phone PASSED             [ 83%]
-tests/test_qr.py::test_generator_page_access PASSED                      [ 86%]
-tests/test_security.py::test_production_secret_key_enforcement PASSED    [ 89%]
-tests/test_security.py::test_session_cookie_security_flags PASSED        [ 91%]
-tests/test_security.py::test_rate_limiting_active PASSED                 [ 94%]
+tests/test_auth.py::test_register_duplicate_email PASSED                 [  4%]
+tests/test_auth.py::test_register_password_mismatch PASSED               [  7%]
+tests/test_auth.py::test_register_short_password PASSED                  [  9%]
+tests/test_auth.py::test_register_integrity_error_rollback PASSED        [ 12%]
+tests/test_auth.py::test_login_success_and_logout_post_only PASSED       [ 14%]
+tests/test_auth.py::test_login_invalid_credentials PASSED                [ 17%]
+tests/test_auth.py::test_profile_page_access_and_password_update PASSED  [ 19%]
+tests/test_history.py::test_dashboard_stats PASSED                       [ 21%]
+tests/test_history.py::test_history_filtering PASSED                     [ 24%]
+tests/test_history.py::test_history_pagination PASSED                    [ 26%]
+tests/test_history.py::test_history_xss_safe_rendering PASSED            [ 29%]
+tests/test_history.py::test_delete_qr_record PASSED                      [ 31%]
+tests/test_history.py::test_delete_qr_db_error_rollback PASSED           [ 34%]
+tests/test_history.py::test_cross_user_delete_prevention PASSED          [ 36%]
+tests/test_history.py::test_dashboard_get_creates_no_qr_records PASSED   [ 39%]
+tests/test_history.py::test_dashboard_today_metric PASSED                [ 41%]
+tests/test_qr.py::test_generate_qr_url PASSED                            [ 43%]
+tests/test_qr.py::test_semantic_url_validation PASSED                    [ 46%]
+tests/test_qr.py::test_semantic_email_validation PASSED                  [ 48%]
+tests/test_qr.py::test_semantic_phone_validation PASSED                  [ 51%]
+tests/test_qr.py::test_oversized_unicode_capacity_overflow PASSED        [ 53%]
+tests/test_qr.py::test_generate_db_error_rollback PASSED                 [ 56%]
+tests/test_qr.py::test_generate_qr_validation_errors PASSED              [ 58%]
+tests/test_qr.py::test_retrieve_qr_image_dynamic PASSED                  [ 60%]
+tests/test_qr.py::test_cross_user_isolation_prevent_access PASSED        [ 63%]
+tests/test_qr.py::test_public_preview_endpoint PASSED                    [ 65%]
+tests/test_qr.py::test_qr_decoding_verification_url PASSED               [ 68%]
+tests/test_qr.py::test_qr_decoding_verification_text PASSED              [ 70%]
+tests/test_qr.py::test_qr_decoding_verification_email PASSED             [ 73%]
+tests/test_qr.py::test_qr_decoding_verification_phone PASSED             [ 75%]
+tests/test_qr.py::test_generator_page_access PASSED                      [ 78%]
+tests/test_qr.py::test_generate_and_decode_google_url PASSED             [ 80%]
+tests/test_qr.py::test_generate_and_decode_different_url PASSED          [ 82%]
+tests/test_qr.py::test_generate_and_decode_plain_text_message PASSED     [ 85%]
+tests/test_qr.py::test_generate_safety_swap_url_in_title PASSED          [ 87%]
+tests/test_security.py::test_production_secret_key_enforcement PASSED    [ 90%]
+tests/test_security.py::test_session_cookie_security_flags PASSED        [ 92%]
+tests/test_security.py::test_rate_limiting_active PASSED                 [ 95%]
 tests/test_security.py::test_rate_limit_preview_behavior PASSED          [ 97%]
 tests/test_security.py::test_health_check_endpoint PASSED                [100%]
 
-============================= 37 passed in 4.97s ==============================
+============================= 41 passed in 5.69s ==============================
 ```
 
 ---

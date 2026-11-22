@@ -22,8 +22,8 @@ function updateTypeInputConfig(type, elements) {
 
     if (type === "url") {
         if (label) label.textContent = "TARGET WEB URL";
-        input.placeholder = "https://yourdomain.com";
-        if (helper) helper.textContent = "Destination website link. Include a valid domain (e.g. https://example.com).";
+        input.placeholder = "https://www.google.com";
+        if (helper) helper.textContent = "Destination website link. Include a valid domain (e.g. https://www.google.com).";
     } else if (type === "text") {
         if (label) label.textContent = "PLAIN TEXT CONTENT";
         input.placeholder = "Enter any message, memo, or raw data...";
@@ -122,6 +122,21 @@ function initDashboard() {
         });
     }
 
+    // Live update preview info on typing
+    if (contentInput && previewContentDisplay) {
+        contentInput.addEventListener("input", () => {
+            const val = contentInput.value.trim();
+            previewContentDisplay.textContent = val || "Enter URL or text content above";
+        });
+    }
+
+    if (titleInput && previewTitleDisplay) {
+        titleInput.addEventListener("input", () => {
+            const val = titleInput.value.trim();
+            previewTitleDisplay.textContent = val || "New QR Code";
+        });
+    }
+
     // Submit handler: Generate and Save to Cloud
     if (form) {
         form.addEventListener("submit", async function(e) {
@@ -129,14 +144,35 @@ function initDashboard() {
 
             const selectedTypeRadio = document.querySelector('input[name="qrType"]:checked');
             const qrType = selectedTypeRadio ? selectedTypeRadio.value : "url";
-            const title = (titleInput ? titleInput.value : "").trim() || "My QR Code";
-            const content = (contentInput ? contentInput.value : "").trim();
+            let title = (titleInput ? titleInput.value : "").trim();
+            let content = (contentInput ? contentInput.value : "").trim();
             const foreground = (fgColor ? fgColor.value : "#000000").trim();
             const background = (bgColor ? bgColor.value : "#FFFFFF").trim();
 
+            // Intelligent Safety Correction:
+            // If user entered a URL into the title field and left content empty or default:
+            if (!content && title) {
+                content = title;
+                title = "My QR Code";
+                if (contentInput) contentInput.value = content;
+                if (titleInput) titleInput.value = "";
+            } else if (title.startsWith("http://") || title.startsWith("https://") || title.startsWith("www.")) {
+                if (!content || content.toLowerCase() === "https://example.com" || content.toLowerCase() === "example.com") {
+                    content = title;
+                    title = "My QR Code";
+                    if (contentInput) contentInput.value = content;
+                    if (titleInput) titleInput.value = "";
+                }
+            }
+
             if (!content) {
-                alert("Please provide content to encode into the QR code.");
+                alert("Please enter the content to encode into the QR code.");
+                if (contentInput) contentInput.focus();
                 return;
+            }
+
+            if (!title) {
+                title = "My QR Code";
             }
 
             if (foreground.toLowerCase() === background.toLowerCase()) {

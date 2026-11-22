@@ -77,15 +77,9 @@
                 </div>
 
                 <form id="dashboardGenerateForm">
-                    <!-- Title Input -->
+                    <!-- QR Type Selector (Top) -->
                     <div class="mb-3">
-                        <label for="qrTitle" class="form-label text-muted small fw-semibold">QR TITLE / LABEL</label>
-                        <input type="text" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="qrTitle" placeholder="e.g. My Website QR" value="Website Landing QR" maxlength="150">
-                    </div>
-
-                    <!-- QR Type Selector -->
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-semibold">INFORMATION TYPE</label>
+                        <label class="form-label text-muted small fw-semibold">SELECT INFORMATION TYPE</label>
                         <div class="row g-2">
                             <div class="col-3">
                                 <input type="radio" class="btn-check" name="qrType" id="qrTypeUrl" value="url" checked>
@@ -118,11 +112,17 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Content Input -->
+                    <!-- Primary Content Input (What is Encoded into the QR Matrix) -->
                     <div class="mb-3">
-                        <label for="qrContent" class="form-label text-muted small fw-semibold" id="qrContentLabel">TARGET URL</label>
-                        <textarea class="form-control bg-dark-subtle border-secondary-subtle text-white font-monospace" id="qrContent" rows="3" placeholder="https://example.com" required>https://example.com</textarea>
+                        <label for="qrContent" class="form-label text-muted small fw-semibold" id="qrContentLabel">TARGET WEB URL</label>
+                        <textarea class="form-control bg-dark-subtle border-secondary-subtle text-white font-monospace" id="qrContent" rows="3" placeholder="https://www.google.com" required></textarea>
                         <div class="form-text text-muted fs-xs" id="qrContentHelper">Enter the destination web URL (https:// will be prepended if missing).</div>
+                    </div>
+
+                    <!-- Optional Label / Title Input -->
+                    <div class="mb-3">
+                        <label for="qrTitle" class="form-label text-muted small fw-semibold">QR TITLE / LABEL (OPTIONAL)</label>
+                        <input type="text" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="qrTitle" placeholder="e.g. My Website Link (Optional)" value="" maxlength="150">
                     </div>
 
                     <!-- Color Customization & Presets -->
@@ -185,8 +185,8 @@
 
                 <!-- Preview Info -->
                 <div class="text-start mb-3 px-1">
-                    <div class="fw-semibold text-white text-truncate" id="previewTitleDisplay">Website Landing QR</div>
-                    <div class="text-secondary fs-xs text-truncate font-monospace" id="previewContentDisplay">https://example.com</div>
+                    <div class="fw-semibold text-white text-truncate" id="previewTitleDisplay">New QR Code</div>
+                    <div class="text-secondary fs-xs text-truncate font-monospace" id="previewContentDisplay">Enter URL or text content above</div>
                 </div>
 
                 <!-- Download & Actions -->

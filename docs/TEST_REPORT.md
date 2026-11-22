@@ -2,8 +2,8 @@
 **Project:** Cloud-Based QR Code Generator  
 **Framework:** Pytest 9.1+  
 **Execution Date:** November 2026  
-**Total Tests Executed:** 37  
-**Total Tests Passed:** 37  
+**Total Tests Executed:** 41  
+**Total Tests Passed:** 41  
 **Total Tests Failed:** 0  
 **Pass Rate:** 100%  
 
@@ -13,7 +13,7 @@
 
 The automated test suite evaluates every layer of the Cloud-Based QR Code Generator application:
 1. **Authentication & Identity (`test_auth.py`)**: 8 tests covering registration, duplicate collisions, 12-character password strength, Werkzeug hashing, post-only CSRF logout, and profile credential management.
-2. **QR Generator Engine & Decoding (`test_qr.py`)**: 15 tests covering dynamic PNG generation, semantic URL/email/phone validation, Unicode capacity overflows, rollback handling, on-demand regeneration, and OpenCV matrix decoding.
+2. **QR Generator Engine & Decoding (`test_qr.py`)**: 19 tests covering dynamic PNG generation, semantic URL/email/phone validation, Unicode capacity overflows, rollback handling, on-demand regeneration, and OpenCV computer-vision matrix decoding (including exact Google URL, Wikipedia URL, and plain text verification).
 3. **Database Persistence & History (`test_history.py`)**: 10 tests covering aggregated dashboard stats, time-windowed "generated today" calculations, server-side pagination, XSS-safe rendering, atomic record deletion, and tenant isolation.
 4. **Security & Cloud Health (`test_security.py`)**: 5 tests covering production `SECRET_KEY` requirements, cookie security flags, IP-based rate limiting, and container orchestration health probes (`/healthz`).
 

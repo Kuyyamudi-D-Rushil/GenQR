@@ -166,9 +166,20 @@ def generate():
 
     raw_content = str(data.get("content", "")).strip()
     qr_type = str(data.get("qr_type", "text")).strip().lower()
-    title = str(data.get("title", "My QR Code")).strip()
+    title = str(data.get("title", "")).strip()
     foreground = str(data.get("foreground", "#000000")).strip()
     background = str(data.get("background", "#FFFFFF")).strip()
+
+    # Intelligent Safety Correction in backend:
+    # If the user typed their URL into the title field and left content empty or default:
+    if (not raw_content or raw_content.lower() in ("https://example.com", "http://example.com", "example.com")) and (
+        title.startswith(("http://", "https://", "www."))
+    ):
+        raw_content = title
+        title = "Web Link"
+
+    if not title:
+        title = "My QR Code"
 
     # Validate parameters and semantic content
     error_msg, formatted_payload = validate_input(raw_content, qr_type, foreground, background)

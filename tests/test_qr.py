@@ -383,3 +383,104 @@ def test_generator_page_access(auth_client):
     assert "/login" in unauth_resp.headers["Location"]
 
 
+def test_generate_and_decode_google_url(auth_client):
+    """Verify entering https://www.google.com encodes, downloads, and decodes to exact URL."""
+    client, _ = auth_client
+    target_url = "https://www.google.com"
+
+    # Step 1: Generate QR Code
+    resp = client.post("/api/generate", json={
+        "title": "Google Official Portal",
+        "qr_type": "url",
+        "content": target_url,
+        "foreground": "#000000",
+        "background": "#FFFFFF"
+    })
+    assert resp.status_code == 200
+    assert resp.mimetype == "image/png"
+    assert "X-QR-ID" in resp.headers
+    qr_id = int(resp.headers["X-QR-ID"])
+
+    # Step 2: Decode the immediate response PNG
+    immediate_decoded = decode_qr_png_bytes(resp.data)
+    assert immediate_decoded == target_url, f"Expected {target_url}, but decoded {immediate_decoded}"
+
+    # Step 3: Download the generated PNG via /api/qr/<id>/download and independently decode it
+    download_resp = client.get(f"/api/qr/{qr_id}/download")
+    assert download_resp.status_code == 200
+    assert download_resp.mimetype == "image/png"
+    downloaded_decoded = decode_qr_png_bytes(download_resp.data)
+    assert downloaded_decoded == target_url, f"Downloaded QR decoded {downloaded_decoded} instead of {target_url}"
+
+    # Step 4: Retrieve the history/preview image via /api/qr/<id>/image and independently decode it
+    image_resp = client.get(f"/api/qr/{qr_id}/image")
+    assert image_resp.status_code == 200
+    image_decoded = decode_qr_png_bytes(image_resp.data)
+    assert image_decoded == target_url, f"History image decoded {image_decoded} instead of {target_url}"
+
+
+def test_generate_and_decode_different_url(auth_client):
+    """Verify entering a different URL encodes, downloads, and decodes accurately."""
+    client, _ = auth_client
+    target_url = "https://en.wikipedia.org/wiki/Cloud_computing"
+
+    resp = client.post("/api/generate", json={
+        "title": "Wikipedia Cloud Computing",
+        "qr_type": "url",
+        "content": target_url,
+        "foreground": "#1E40AF",
+        "background": "#F0F9FF"
+    })
+    assert resp.status_code == 200
+    qr_id = int(resp.headers["X-QR-ID"])
+
+    # Decode download
+    download_resp = client.get(f"/api/qr/{qr_id}/download")
+    assert download_resp.status_code == 200
+    downloaded_decoded = decode_qr_png_bytes(download_resp.data)
+    assert downloaded_decoded == target_url, f"Expected {target_url}, got {downloaded_decoded}"
+
+
+def test_generate_and_decode_plain_text_message(auth_client):
+    """Verify plain text message encodes, downloads, and decodes without URL corruption."""
+    client, _ = auth_client
+    raw_message = "Project Verification: Cloud-Based QR Generator 2026 Genuine Output"
+
+    resp = client.post("/api/generate", json={
+        "title": "Verification Text Memo",
+        "qr_type": "text",
+        "content": raw_message,
+        "foreground": "#047857",
+        "background": "#ECFDF5"
+    })
+    assert resp.status_code == 200
+    qr_id = int(resp.headers["X-QR-ID"])
+
+    download_resp = client.get(f"/api/qr/{qr_id}/download")
+    assert download_resp.status_code == 200
+    downloaded_decoded = decode_qr_png_bytes(download_resp.data)
+    assert downloaded_decoded == raw_message, f"Expected {raw_message}, got {downloaded_decoded}"
+
+
+def test_generate_safety_swap_url_in_title(auth_client):
+    """Verify backend safety swap if user enters target URL into title and leaves content empty."""
+    client, _ = auth_client
+    target_url = "https://www.google.com"
+
+    resp = client.post("/api/generate", json={
+        "title": target_url,  # User mistakenly entered URL in title
+        "qr_type": "url",
+        "content": "",        # Empty content
+        "foreground": "#000000",
+        "background": "#FFFFFF"
+    })
+    assert resp.status_code == 200
+    qr_id = int(resp.headers["X-QR-ID"])
+
+    download_resp = client.get(f"/api/qr/{qr_id}/download")
+    assert download_resp.status_code == 200
+    downloaded_decoded = decode_qr_png_bytes(download_resp.data)
+    assert downloaded_decoded == target_url
+
+
+
