@@ -125,3 +125,60 @@ def test_login_invalid_credentials(client, app):
     }, follow_redirects=True)
 
     assert b"Invalid email or password" in response.data
+
+
+def test_profile_page_access_and_password_update(auth_client, app):
+    """Verify user profile review and secure credential modification."""
+    client, user_id = auth_client
+
+    # Authenticated user can access profile
+    resp = client.get("/profile")
+    assert resp.status_code == 200
+    assert b"Account & Security Settings" in resp.data
+    assert b"testuser" in resp.data
+
+    # Fail: Incorrect current password
+    fail_resp1 = client.post("/profile", data={
+        "current_password": "WrongPassword123!",
+        "new_password": "BrandNewSecurePassword123!",
+        "confirm_password": "BrandNewSecurePassword123!"
+    }, follow_redirects=True)
+    assert fail_resp1.status_code == 400
+    assert b"Current password is incorrect" in fail_resp1.data
+
+    # Fail: Short new password (< 12 characters)
+    fail_resp2 = client.post("/profile", data={
+        "current_password": "securepassword123",
+        "new_password": "short",
+        "confirm_password": "short"
+    }, follow_redirects=True)
+    assert fail_resp2.status_code == 400
+    assert b"at least 12 characters" in fail_resp2.data
+
+    # Fail: Password mismatch
+    fail_resp3 = client.post("/profile", data={
+        "current_password": "securepassword123",
+        "new_password": "BrandNewSecurePassword123!",
+        "confirm_password": "DifferentPassword123!"
+    }, follow_redirects=True)
+    assert fail_resp3.status_code == 400
+    assert b"Passwords do not match" in fail_resp3.data
+
+    # Success: Valid password update
+    success_resp = client.post("/profile", data={
+        "current_password": "securepassword123",
+        "new_password": "BrandNewSecurePassword123!",
+        "confirm_password": "BrandNewSecurePassword123!"
+    }, follow_redirects=True)
+    assert success_resp.status_code == 200
+    assert b"successfully updated" in success_resp.data
+
+    # Verify new password can be used to log in
+    client.post("/logout", follow_redirects=True)
+    new_login = client.post("/login", data={
+        "email": "test@example.com",
+        "password": "BrandNewSecurePassword123!"
+    }, follow_redirects=True)
+    assert new_login.status_code == 200
+    assert b"Welcome back" in new_login.data
+

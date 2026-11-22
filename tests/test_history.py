@@ -219,3 +219,36 @@ def test_dashboard_get_creates_no_qr_records(auth_client, app):
         assert final_user_records == initial_user_records
         assert final_total_records == initial_total_records
 
+
+def test_dashboard_today_metric(auth_client, app):
+    """Verify dashboard accurately aggregates records created today vs earlier."""
+    from datetime import datetime, timezone, timedelta
+    client, user_id = auth_client
+
+    with app.app_context():
+        # Add 1 record created today
+        qr_today = QRCode(
+            user_id=user_id,
+            title="Today QR",
+            qr_type="url",
+            content="https://today.example.com",
+            created_at=datetime.now(timezone.utc)
+        )
+        # Add 1 record created 5 days ago
+        qr_past = QRCode(
+            user_id=user_id,
+            title="Past QR",
+            qr_type="url",
+            content="https://past.example.com",
+            created_at=datetime.now(timezone.utc) - timedelta(days=5)
+        )
+        db.session.add_all([qr_today, qr_past])
+        db.session.commit()
+
+    resp = client.get("/dashboard")
+    assert resp.status_code == 200
+    assert b"GENERATED TODAY" in resp.data
+    # Total is 2, Today is 1
+    assert b'id="statsTodayCount">1<' in resp.data
+
+

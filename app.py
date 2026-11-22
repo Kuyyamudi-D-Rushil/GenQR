@@ -47,6 +47,27 @@ def create_app(config_class=Config):
     def home():
         return render_template("index.html")
 
+    # Cloud Orchestration Health Check Endpoint
+    @app.route("/healthz")
+    def health_check():
+        """Idempotent health check probing application and database status."""
+        try:
+            from sqlalchemy import text
+            db.session.execute(text("SELECT 1"))
+            return jsonify({
+                "status": "healthy",
+                "database": "connected",
+                "service": "cloud-qr-generator",
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }), 200
+        except Exception as e:
+            app.logger.error("Health check database probe failed: %s", str(e))
+            return jsonify({
+                "status": "unhealthy",
+                "database": "disconnected",
+                "error": "Database probe failed"
+            }), 503
+
     # Global error handlers
     @app.errorhandler(404)
     def page_not_found(e):

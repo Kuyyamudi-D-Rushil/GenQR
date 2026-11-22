@@ -4,7 +4,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from extensions import db, limiter
-from models import User
+from models import User, QRCode
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -117,3 +117,56 @@ def logout():
     logout_user()
     flash("You have been successfully logged out.", "info")
     return redirect(url_for("home"))
+
+
+@auth_bp.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    """User account profile and secure credential management."""
+    total_user_qrs = QRCode.query.filter_by(user_id=current_user.id).count()
+
+    if request.method == "POST":
+        current_password = request.form.get("current_password", "")
+        new_password = request.form.get("new_password", "")
+        confirm_password = request.form.get("confirm_password", "")
+
+        errors = []
+
+        if not current_user.check_password(current_password):
+            errors.append("Current password is incorrect.")
+
+        if not new_password or len(new_password) < 12:
+            errors.append("New password must be at least 12 characters long.")
+        elif new_password != confirm_password:
+            errors.append("Passwords do not match.")
+
+        if errors:
+            for error in errors:
+                flash(error, "danger")
+            return render_template(
+                "profile.html",
+                user=current_user,
+                total_user_qrs=total_user_qrs
+            ), 400
+
+        current_user.set_password(new_password)
+        try:
+            db.session.commit()
+            flash("Your password has been successfully updated.", "success")
+            return redirect(url_for("auth.profile"))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            current_app.logger.exception("Database error updating password: %s", str(e))
+            flash("A database error occurred while updating your password. Please try again.", "danger")
+            return render_template(
+                "profile.html",
+                user=current_user,
+                total_user_qrs=total_user_qrs
+            ), 500
+
+    return render_template(
+        "profile.html",
+        user=current_user,
+        total_user_qrs=total_user_qrs
+    )
+

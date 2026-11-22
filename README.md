@@ -4,74 +4,159 @@
 [![Flask](https://img.shields.io/badge/Flask-3.1.3-black.svg)](https://flask.palletsprojects.com/)
 [![Database](https://img.shields.io/badge/Database-PostgreSQL-336791.svg)](https://www.postgresql.org/)
 [![Cloud](https://img.shields.io/badge/Hosted%20On-Render-46E3B7.svg)](https://render.com/)
-[![Tests](https://img.shields.io/badge/Tests-15%20Passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-37%20Passed-brightgreen.svg)]()
 
-> A full-stack cloud computing mini-project demonstrating stateless web application deployment, cloud database persistence, user authentication, and on-demand QR code generation using **Python Flask**, **Render**, and **Managed PostgreSQL**.
-
----
-
-## 📌 Executive Summary
-
-Traditional QR code generators either store generated images on local web server filesystems or lack user management entirely. When deployed on modern cloud container platforms (such as Render, Heroku, or AWS ECS), local filesystems are **ephemeral** and reset on every redeployment or container restart.
-
-This project solves this challenge by implementing a **cloud-native architecture**:
-1. Encoded QR content, metadata, color configurations, and user relationships are persisted in a **cloud relational database (Render PostgreSQL)**.
-2. QR images are generated **statelessly and on-the-fly in server memory** using Python's `qrcode` and `Pillow` libraries, then streamed directly to the client browser as PNG streams.
-3. Users can securely register, log in, generate customizable QR codes (URLs, plain text, emails, phone numbers), manage their generation portfolio, and download high-resolution PNG assets from any internet-connected device.
+> A production-grade cloud computing application demonstrating stateless web application deployment, managed cloud relational database persistence, secure multi-tenant authentication, and dynamic on-demand QR code generation using **Python Flask**, **Render**, and **Managed PostgreSQL**.
 
 ---
 
-## 🏛️ System Architecture
+## Table of Contents
+1. [Project Overview](#1-project-overview)
+2. [Problem Statement](#2-problem-statement)
+3. [Objectives](#3-objectives)
+4. [Features](#4-features)
+5. [Technology Stack](#5-technology-stack)
+6. [System Architecture](#6-system-architecture)
+7. [Cloud Computing Concepts](#7-cloud-computing-concepts)
+8. [Database Design](#8-database-design)
+9. [Folder Structure](#9-folder-structure)
+10. [Local Setup](#10-local-setup)
+11. [Environment Variables](#11-environment-variables)
+12. [Running Instructions](#12-running-instructions)
+13. [Testing Instructions](#13-testing-instructions)
+14. [Render Deployment Instructions](#14-render-deployment-instructions)
+15. [Screenshots & UI Walkthrough](#15-screenshots--ui-walkthrough)
 
-The application implements a clean **3-Tier Cloud Architecture**:
+---
+
+## 1. Project Overview
+The **Cloud-Based QR Code Generator** is a complete, cloud-hosted web application that enables users to generate high-resolution, scannable QR codes for diverse information formats (web URLs, plain text, email `mailto:` links, and phone `tel:` links), customize foreground and background colors, download high-definition PNG images, and store their generated QR assets securely in a cloud database. Registered users can access their generation history, view real-time aggregated dashboard analytics, and manage their portfolio from any internet-connected device.
+
+---
+
+## 2. Problem Statement
+Traditional QR code generator utilities suffer from two critical architectural shortcomings:
+1. **Local Ephemeral Storage Loss:** In modern cloud Platform-as-a-Service (PaaS) and container environments (such as Render, Heroku, AWS ECS), the local container filesystem is ephemeral. Any files written to local disk are wiped whenever an instance restarts, scales, or redeploys. Saving images to local disk leads to complete asset loss.
+2. **Lack of Centralized Multi-User Management:** Standard tools do not provide authenticated multi-user portfolios, search capabilities, or persistent asset regeneration, requiring users to manually archive images on their personal devices.
+
+---
+
+## 3. Objectives
+- **Demonstrate Cloud-Native Architecture:** Build a decoupled 3-tier cloud application using Python Flask and PostgreSQL on the Render cloud platform.
+- **Solve the Ephemeral Disk Dilemma:** Persist lightweight QR parameters and metadata in a managed cloud database, regenerating images statelessly on-the-fly in server memory (`io.BytesIO`) without relying on ephemeral disks or external blob storage.
+- **Ensure Multi-Tenant Isolation:** Implement cryptographic authentication (Werkzeug password hashing), secure session management (Flask-Login, HTTP-only Lax cookies), and row-level user scoping.
+- **Provide Genuine Functionality:** Generate genuine, scannable QR codes using Python's `qrcode` and `Pillow` libraries, validated via computer-vision automated decoding tests.
+
+---
+
+## 4. Features
+- **Multi-Format QR Generation:**
+  - **URLs:** Normalizes domains and automatically validates HTTP/HTTPS protocols.
+  - **Plain Text:** Encodes arbitrary text payloads up to 2,048 bytes.
+  - **Email:** Semantic RFC 5322 email syntax validation, normalized to `mailto:`.
+  - **Phone Numbers:** E.164 phone digit length validation, normalized to `tel:`.
+- **Visual Customization & Live Previews:**
+  - Real-time color pickers with hex synchronization.
+  - Contrast validation preventing unreadable combinations.
+  - Quick curated palette presets (Classic Monochrome, Indigo Tech, Emerald, Ruby, Royal Violet).
+  - High-resolution PNG output at Error Correction Level M (15% error recovery).
+- **Persistent Cloud Portfolio & History:**
+  - Server-side pagination with secondary deterministic ID sort.
+  - Multi-term search queries across title and encoded content.
+  - Category type filtering (URL, text, email, phone).
+  - Detailed modal inspection with XSS-safe DOM attribute binding.
+  - Accessible deletion with automatic count and empty-state updates.
+- **Dedicated Application Pages:**
+  - **Landing Page (`/`):** Showcase of capabilities, 3-tier architecture, and public stateless generation sandbox.
+  - **User Dashboard (`/dashboard`):** Real-time database metrics (Total Saved, Generated Today, Type Breakdown) and recent generations list.
+  - **Generator Studio (`/generate`):** Dedicated standalone workspace for generation and live testing.
+  - **History Archive (`/history`):** Complete portfolio management with server-side pagination.
+  - **User Profile (`/profile`):** Account identity details, cloud storage tier info, and secure password modification.
+  - **Health Check (`/healthz`):** Active container orchestration probe verifying database connectivity.
+
+---
+
+## 5. Technology Stack
+
+| Layer | Technology | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | HTML5, CSS3, JavaScript (ES6+) | Semantic markup, responsive glassmorphism UI |
+| **UI Framework** | Bootstrap 5.3.3 + Bootstrap Icons | Responsive grid system, modal dialogs, accessible elements |
+| **Backend Framework** | Python 3.12 + Flask 3.1.3 | REST API controllers, template rendering, blueprints |
+| **WSGI Server** | Gunicorn 21.2+ | Production-grade pre-fork worker HTTP server |
+| **QR Engine** | `qrcode[pil] 8.2+` + `Pillow 13.0+` | In-memory 2D matrix generation and PNG rendering |
+| **Database ORM** | Flask-SQLAlchemy 3.1+ | Relational schema modeling and connection pooling |
+| **Database Migrations** | Flask-Migrate 4.1+ (Alembic) | Version-controlled database schema evolution |
+| **Authentication** | Flask-Login 0.6+ | Session persistence and user loader management |
+| **Password Security** | Werkzeug | PBKDF2/SHA-256 salted password hashing |
+| **CSRF Protection** | Flask-WTF 1.3+ | CSRF token validation on state-changing requests |
+| **Rate Limiting** | Flask-Limiter 4.1+ | Throttling login brute-force and preview abuse |
+| **Cloud Database** | Render Managed PostgreSQL | High-availability relational cloud persistence |
+| **Cloud Hosting** | Render Web Services | Linux container orchestration with zero-downtime health probes |
+| **Verification / CV** | Pytest 9.1+ + OpenCV (`cv2`) | Automated integration testing and QR matrix decoding |
+
+---
+
+## 6. System Architecture
+
+The application implements a decoupled **Three-Tier Cloud Architecture**:
 
 ```
-+-------------------------------------------------------------------------+
-|                         PRESENTATION LAYER                              |
-|   Browser (Desktop / Tablet / Mobile)                                   |
-|   - HTML5, CSS3, Modern Glassmorphism SaaS UI                           |
-|   - Bootstrap 5.3 + Bootstrap Icons                                     |
-|   - Vanilla JavaScript (Fetch API, Live Canvas, Color Sync, DOM Ops)    |
-+-------------------------------------------------------------------------+
-                                    │  ▲
-                  HTTP / HTTPS REST │  │  JSON Metadata
-                  Requests (CSRF)   │  │  PNG Stream
-                                    ▼  │
-+-------------------------------------------------------------------------+
-|                         APPLICATION LAYER                               |
-|   Render Cloud Web Service (Linux Container)                            |
-|   - Gunicorn (WSGI HTTP Server)                                         |
-|   - Python 3.12 + Flask 3                                               |
-|   - Modular Blueprints: Auth, Generator, History                        |
-|   - Flask-Login (Session & Multi-Tenant Isolation)                      |
-|   - In-Memory QR Engine (qrcode + Pillow / BytesIO)                     |
-+-------------------------------------------------------------------------+
-                                    │  ▲
-                         SQLAlchemy │  │  Structured
-                         Query / DDL│  │  Records
-                                    ▼  │
-+-------------------------------------------------------------------------+
-|                            DATA LAYER                                   |
-|   Render Managed PostgreSQL Database                                    |
-|   - users table (Credentials hashed with PBKDF2/Werkzeug)               |
-|   - qr_codes table (Relational foreign key, cascade delete)             |
-|   - Flask-Migrate (Alembic schema migrations)                           |
-+-------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------+
+|                            LAYER 1: PRESENTATION LAYER                            |
+|                                                                                   |
+|  - HTML5 & CSS3 with Glassmorphism Design System (Bootstrap 5.3.3)                |
+|  - Responsive Client Application (Desktop, Tablet, Mobile)                        |
+|  - Asynchronous HTTP/REST Requests (Fetch API, Blob Stream Handlers)             |
+|  - Client-Side Color Hex Synchronizer & Live Preview Sandbox                      |
+|  - Accessible History Grid & Real-time Live Announcements (ARIA live)             |
++------------------------------------------+----------------------------------------+
+                                           | HTTPS / JSON / Binary Blobs
+                                           v
++-----------------------------------------------------------------------------------+
+|                        LAYER 2: STATELESS APPLICATION LAYER                       |
+|                                                                                   |
+|  - Platform: Render Web Service (Ubuntu Linux Container / Python 3.12)           |
+|  - WSGI Server: Gunicorn (Pre-fork worker model)                                 |
+|  - Web Framework: Python Flask (Application Factory & Blueprints)                |
+|  - Authentication: Flask-Login with Secure Lax/HttpOnly Cookie Management        |
+|  - Security & Throttling: Flask-Limiter, Flask-WTF CSRF Protection               |
+|  - Input Validation: Semantic URL, RFC 5322 Email, E.164 Phone Normalization     |
+|  - Image Generation: Python qrcode + Pillow (In-Memory BytesIO Buffering)         |
+|  - Health & Diagnostics: /healthz Active Database Ping Probe                     |
++------------------------------------------+----------------------------------------+
+                                           | Connection Pool / SSL TCP Socket
+                                           v
++-----------------------------------------------------------------------------------+
+|                          LAYER 3: CLOUD DATA LAYER                                |
+|                                                                                   |
+|  - Platform: Render Managed Cloud PostgreSQL                                      |
+|  - Persistence: Dedicated Cloud Block Storage with Automatic Failover             |
+|  - ORM & Abstraction: Flask-SQLAlchemy 3.1+ (Engine Connection Pooling)           |
+|  - Migration Tracking: Flask-Migrate & Alembic                                    |
+|  - Schema Optimization: Composite Index on (user_id, created_at)                  |
+|  - Referential Integrity: Foreign Keys with ON DELETE CASCADE                     |
++-----------------------------------------------------------------------------------+
 ```
-
-### End-to-End Request Lifecycle
-1. **User Action:** The user enters a target (e.g., `https://google.com`), selects brand colors (`#4F46E5` foreground, `#FFFFFF` background), and clicks "Generate & Save".
-2. **Transport:** The browser issues a `POST /api/generate` request containing JSON payload and `X-CSRFToken` header.
-3. **Validation & Auth:** Flask validates data formats (valid URL pattern, 6-digit hex color regex, contrast requirements) and confirms the session identity via Flask-Login.
-4. **Relational Persistence:** The QR metadata (title, type, raw content, foreground, background, timestamp) is committed to the cloud database linked to `current_user.id`.
-5. **In-Memory Rendering:** Python's `qrcode` and `Pillow` libraries generate the QR pixel matrix in an in-memory `io.BytesIO` buffer without writing to disk.
-6. **Delivery:** The binary PNG stream is returned with `mimetype="image/png"` and custom headers (`X-QR-ID`).
-7. **Client Presentation:** JavaScript creates a local blob object URL, renders the preview, and updates the download link.
-8. **Subsequent Access:** Later, when the user visits their **History** or **Dashboard**, the image is regenerated on demand via `GET /api/qr/<id>/image`.
 
 ---
 
-## 🗄️ Database Schema Design
+## 7. Cloud Computing Concepts
+
+This application serves as a practical implementation of fundamental cloud computing principles:
+
+1. **Cloud-Hosted Web Application:** Containerized application deployment on Render managed infrastructure with automated TLS and port binding.
+2. **Cloud-Hosted Relational Database:** Managed PostgreSQL storage completely separated from ephemeral web nodes, providing automated backups and WAL logging.
+3. **Stateless Compute & Ephemeral Disk Mitigation:** Eliminates filesystem reliance by storing generation metadata in the database and streaming rendered images directly from memory buffers (`io.BytesIO`).
+4. **Client-Server Communication:** Modern RESTful contracts using standardized HTTP verbs (`GET`, `POST`, `DELETE`), JSON payloads, and binary octet streams.
+5. **Multi-Tenant User Isolation:** Strict row-level database filtering enforcing that users can only access and modify their own assets (`filter_by(id=qr_id, user_id=current_user.id)`).
+6. **Authentication & Session Security:** Salted PBKDF2 password hashing with cryptographically signed, `HttpOnly`, `SameSite="Lax"` session cookies.
+7. **Infrastructure-as-Code (IaC):** Complete cloud resource provisioning codified in `render.yaml`.
+8. **Scalability & Resiliency:** Database indexes (`ix_qr_codes_user_created`), server-side pagination, and rate limiting protect against resource exhaustion.
+
+---
+
+## 8. Database Design
 
 ### Table 1: `users`
 | Column Name | Data Type | Constraints | Description |
@@ -94,57 +179,39 @@ The application implements a clean **3-Tier Cloud Architecture**:
 | `background` | `VARCHAR(7)` | Default `'#FFFFFF'` | 6-character hex color |
 | `created_at` | `TIMESTAMP` | `DEFAULT UTC NOW`, `INDEX` | Generation timestamp |
 
-> **Composite Index:** `ix_qr_codes_user_created` on `(user_id, created_at)` accelerates paginated user history queries.
+> **Composite Index:** `ix_qr_codes_user_created` on `(user_id, created_at)` optimizes paginated history queries from $O(N)$ table scans to $O(\log N)$ b-tree lookups.
 
 ---
 
-## 🛠️ Technology Stack
-
-| Layer | Technology | Purpose |
-| :--- | :--- | :--- |
-| **Frontend** | HTML5, CSS3, JavaScript (ES6+) | Modern responsive user interface |
-| **Styling** | Bootstrap 5.3 + Custom CSS | Glassmorphism SaaS aesthetics, dark theme |
-| **Backend Framework** | Python Flask 3 | REST API routes, template rendering, controllers |
-| **WSGI Server** | Gunicorn | Production-ready HTTP server on Render |
-| **QR Engine** | `qrcode[pil]` + `Pillow` | In-memory QR code generation |
-| **ORM** | Flask-SQLAlchemy 3 + SQLAlchemy 2 | Object-Relational Mapping |
-| **Migrations** | Flask-Migrate + Alembic | Versioned database schema evolution |
-| **Authentication** | Flask-Login | User sessions and access control |
-| **Password Security** | Werkzeug (`generate_password_hash`) | Cryptographic password hashing |
-| **CSRF Protection** | Flask-WTF (`CSRFProtect`) | Protection against CSRF attacks |
-| **Rate Limiting** | Flask-Limiter | Brute-force throttling and endpoint abuse protection |
-| **Cloud Database** | Render Managed PostgreSQL | High-availability cloud persistence |
-| **Hosting Platform** | Render Web Services | Cloud deployment and orchestration |
-| **Test Suite** | pytest | 15 automated unit & integration tests |
-
----
-
-## 📂 Project Structure
+## 9. Folder Structure
 
 ```
 QRGen/
 ├── .env                        # Local environment variables (git-ignored)
 ├── .gitignore                  # Git exclusions
 ├── Procfile                    # Render process declaration (web: gunicorn app:app)
+├── render.yaml                 # Render Infrastructure-as-Code blueprint
 ├── requirements.txt            # Tested Python dependency freeze
 ├── config.py                   # App config & Render postgres:// URL adapter
-├── extensions.py               # Flask extensions (db, login_manager, csrf, migrate)
+├── extensions.py               # Flask extensions (db, login_manager, csrf, limiter)
 ├── models.py                   # User and QRCode SQLAlchemy models
-├── app.py                      # Flask application factory
+├── app.py                      # Flask application factory & health-check
 │
 ├── routes/
 │   ├── __init__.py             # Route package init
-│   ├── auth.py                 # Register, login, logout routes
-│   ├── generator.py            # QR generation, on-the-fly rendering, download
-│   └── history.py              # Dashboard stats, history filtering, deletion
+│   ├── auth.py                 # Register, login, logout, profile routes
+│   ├── generator.py            # Dedicated studio, QR generation, download
+│   └── history.py              # Dashboard stats, paginated history, deletion
 │
 ├── templates/
 │   ├── base.html               # Global layout, navbar, CSRF meta, footer
-│   ├── index.html              # Landing page, architecture showcase, public demo
-│   ├── login.html              # Secure login form with show/hide password
-│   ├── register.html           # Registration form with client-side checks
-│   ├── dashboard.html          # Metric cards, QR generator, recent list
-│   └── history.html            # Searchable, filterable QR portfolio with modal
+│   ├── index.html              # Landing page, architecture showcase, sandbox
+│   ├── login.html              # Secure login form with password toggle
+│   ├── register.html           # Registration form with 12-char validation
+│   ├── dashboard.html          # Metric cards, quick generator, recent list
+│   ├── generator.html          # Dedicated QR generation studio workspace
+│   ├── history.html            # Searchable, filterable QR portfolio with modal
+│   └── profile.html            # User account settings and password update
 │
 ├── static/
 │   ├── css/
@@ -154,19 +221,27 @@ QRGen/
 │
 ├── migrations/                 # Alembic database migration scripts
 │   ├── versions/
-│   │   └── d15fa036c9da_initial_schema.py
+│   │   ├── d15fa036c9da_initial_schema.py
+│   │   └── e10f718140c4_add_composite_index.py
 │   └── env.py
+│
+├── docs/                       # Comprehensive Engineering Documentation
+│   ├── PROJECT_AUDIT.md        # Complete component audit and classification
+│   ├── IMPLEMENTATION_PLAN.md  # Technical architectural blueprint
+│   ├── TEST_REPORT.md          # 37-test automated verification matrix
+│   └── RENDER_DEPLOYMENT.md    # Production deployment and configuration guide
 │
 └── tests/                      # Automated test suite
     ├── conftest.py             # Fixtures for app, client, auth_client
-    ├── test_auth.py            # Registration, duplicate check, login, logout
-    ├── test_qr.py              # QR generation, validation, dynamic rendering
-    └── test_history.py         # Stats, search/filter, owner deletion, isolation
+    ├── test_auth.py            # Registration, duplicate check, login, profile
+    ├── test_qr.py              # QR generation, validation, OpenCV decoding
+    ├── test_history.py         # Stats, today query, pagination, isolation
+    └── test_security.py        # Secret key check, cookies, rate limits, healthz
 ```
 
 ---
 
-## 🚀 Local Development Setup
+## 10. Local Setup
 
 ### 1. Clone or Open the Repository
 ```bash
@@ -189,8 +264,12 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Setup Local Environment Variables
-A sample `.env` file is included:
+---
+
+## 11. Environment Variables
+
+Create a `.env` file in the project root:
+
 ```env
 SECRET_KEY=your-local-development-secret-key-min-32-chars
 DATABASE_URL=sqlite:///qr_generator.db
@@ -198,142 +277,137 @@ FLASK_DEBUG=1
 FLASK_ENV=development
 ```
 
-### 4. Initialize Database
+> In production on Render, `FLASK_ENV=production`, `FLASK_DEBUG=0`, `DATABASE_URL` is automatically supplied by the managed PostgreSQL service, and `SECRET_KEY` is generated automatically.
+
+---
+
+## 12. Running Instructions
+
+### Initialize Database
 ```bash
-flask --app app db upgrade
+flask db upgrade
 ```
 
-### 5. Run the Application
+### Start Development Server
 ```bash
 python app.py
 ```
 Open your browser and navigate to: `http://127.0.0.1:5000`
 
+### Start with Production Gunicorn (Linux / macOS)
+```bash
+gunicorn app:app
+```
+
 ---
 
-## 🧪 Running the Test Suite
+## 13. Testing Instructions
 
-The test suite covers authentication, QR matrix generation, input validation, cloud database queries, and multi-tenant security isolation:
+The test suite contains 37 automated tests verifying authentication, semantic input validation, database rollbacks, computer-vision QR decoding, and health check probes:
 
-```bash
+```powershell
+# On Windows PowerShell:
+$env:PYTEST_DISABLE_PLUGIN_AUTOLOAD="1"; python -m pytest -v
+
+# On macOS/Linux:
 python -m pytest -v
 ```
 
-Expected result:
-```
-tests/test_auth.py::test_register_success PASSED                         [  6%]
-tests/test_auth.py::test_register_duplicate_email PASSED                 [ 13%]
-tests/test_auth.py::test_register_password_mismatch PASSED               [ 20%]
-tests/test_auth.py::test_register_short_password PASSED                  [ 26%]
-tests/test_auth.py::test_login_success_and_logout PASSED                 [ 33%]
-tests/test_auth.py::test_login_invalid_credentials PASSED                [ 40%]
-tests/test_history.py::test_dashboard_stats PASSED                       [ 46%]
-tests/test_history.py::test_history_filtering PASSED                     [ 53%]
-tests/test_history.py::test_delete_qr_record PASSED                      [ 60%]
-tests/test_history.py::test_cross_user_delete_prevention PASSED          [ 66%]
-tests/test_qr.py::test_generate_qr_url PASSED                            [ 73%]
-tests/test_qr.py::test_generate_qr_validation_errors PASSED              [ 80%]
-tests/test_qr.py::test_retrieve_qr_image_dynamic PASSED                  [ 86%]
-tests/test_qr.py::test_cross_user_isolation_prevent_access PASSED        [ 93%]
-tests/test_qr.py::test_public_preview_endpoint PASSED                    [100%]
-============================= 15 passed in ~2.0s ==============================
+### Test Suite Execution Output:
+```text
+tests/test_auth.py::test_register_success PASSED                         [  2%]
+tests/test_auth.py::test_register_duplicate_email PASSED                 [  5%]
+tests/test_auth.py::test_register_password_mismatch PASSED               [  8%]
+tests/test_auth.py::test_register_short_password PASSED                  [ 10%]
+tests/test_auth.py::test_register_integrity_error_rollback PASSED        [ 13%]
+tests/test_auth.py::test_login_success_and_logout_post_only PASSED       [ 16%]
+tests/test_auth.py::test_login_invalid_credentials PASSED                [ 18%]
+tests/test_auth.py::test_profile_page_access_and_password_update PASSED  [ 21%]
+tests/test_history.py::test_dashboard_stats PASSED                       [ 24%]
+tests/test_history.py::test_history_filtering PASSED                     [ 27%]
+tests/test_history.py::test_history_pagination PASSED                    [ 29%]
+tests/test_history.py::test_history_xss_safe_rendering PASSED            [ 32%]
+tests/test_history.py::test_delete_qr_record PASSED                      [ 35%]
+tests/test_history.py::test_delete_qr_db_error_rollback PASSED           [ 37%]
+tests/test_history.py::test_cross_user_delete_prevention PASSED          [ 40%]
+tests/test_history.py::test_dashboard_get_creates_no_qr_records PASSED   [ 43%]
+tests/test_history.py::test_dashboard_today_metric PASSED                [ 45%]
+tests/test_qr.py::test_generate_qr_url PASSED                            [ 48%]
+tests/test_qr.py::test_semantic_url_validation PASSED                    [ 51%]
+tests/test_qr.py::test_semantic_email_validation PASSED                  [ 54%]
+tests/test_qr.py::test_semantic_phone_validation PASSED                  [ 56%]
+tests/test_qr.py::test_oversized_unicode_capacity_overflow PASSED        [ 59%]
+tests/test_qr.py::test_generate_db_error_rollback PASSED                 [ 62%]
+tests/test_qr.py::test_generate_qr_validation_errors PASSED              [ 64%]
+tests/test_qr.py::test_retrieve_qr_image_dynamic PASSED                  [ 67%]
+tests/test_qr.py::test_cross_user_isolation_prevent_access PASSED        [ 70%]
+tests/test_qr.py::test_public_preview_endpoint PASSED                    [ 72%]
+tests/test_qr.py::test_qr_decoding_verification_url PASSED               [ 75%]
+tests/test_qr.py::test_qr_decoding_verification_text PASSED              [ 78%]
+tests/test_qr.py::test_qr_decoding_verification_email PASSED             [ 81%]
+tests/test_qr.py::test_qr_decoding_verification_phone PASSED             [ 83%]
+tests/test_qr.py::test_generator_page_access PASSED                      [ 86%]
+tests/test_security.py::test_production_secret_key_enforcement PASSED    [ 89%]
+tests/test_security.py::test_session_cookie_security_flags PASSED        [ 91%]
+tests/test_security.py::test_rate_limiting_active PASSED                 [ 94%]
+tests/test_security.py::test_rate_limit_preview_behavior PASSED          [ 97%]
+tests/test_security.py::test_health_check_endpoint PASSED                [100%]
+
+============================= 37 passed in 4.97s ==============================
 ```
 
 ---
 
-## ☁️ Step-by-Step Render Cloud Deployment
+## 14. Render Deployment Instructions
 
-### Step 1: Push Code to GitHub
-```bash
-git init
-git add .
-git commit -m "feat: complete cloud-based QR code generator"
-git branch -M main
-git remote add origin https://github.com/<YOUR_USERNAME>/cloud-qr-generator.git
-git push -u origin main
+Detailed step-by-step deployment instructions are documented in [`docs/RENDER_DEPLOYMENT.md`](docs/RENDER_DEPLOYMENT.md).
+
+### Quick Blueprint Deployment:
+1. Push your repository to GitHub.
+2. In the [Render Dashboard](https://dashboard.render.com), click **New +** &rarr; **Blueprint**.
+3. Select your repository. Render will automatically detect [`render.yaml`](render.yaml) and configure:
+   - Web Service: `cloud-qr-generator`
+   - Database: `cloud-qr-db` (Managed PostgreSQL)
+   - Build Command: `pip install -r requirements.txt && flask db upgrade`
+   - Start Command: `gunicorn app:app`
+   - Health Check Path: `/healthz`
+4. Click **Apply**.
+
+---
+
+## 15. Screenshots & UI Walkthrough
+
+### 1. Landing Page & Architecture Showcase (`/`)
+Modern glassmorphism dark SaaS design with hero section, trust badges, live generation sandbox, three-tier cloud architecture diagram, and feature breakdown.
+
+```
++--------------------------------------------------------------------------------+
+| CloudQR SaaS                     [Features] [Architecture]  [Log In] [Get Started] |
++--------------------------------------------------------------------------------+
+| Next-Gen QR Code Engine with Persistent Cloud Storage                           |
+|                                                                                |
+| [ Create Free Account ]  [ Try Interactive Demo ]                              |
+|                                                                                |
+| (v) Zero Data Loss   (*) Dynamic Memory Generation   (Cloud) Render + PostgreSQL|
++--------------------------------------------------------------------------------+
 ```
 
-### Step 2: Create Managed PostgreSQL on Render
-1. Sign in to [Render Dashboard](https://dashboard.render.com/).
-2. Click **New +** → **PostgreSQL**.
-3. Name: `cloud-qr-db`
-4. Database Name: `cloud_qr_db`
-5. User: `qr_admin`
-6. Region: Choose the region nearest to you (e.g., *Singapore*, *Frankfurt*, *Oregon*).
-7. Plan: **Free** (or Starter).
-8. Click **Create Database**.
-9. Once provisioned, locate the **Internal Database URL** (e.g., `postgres://qr_admin:...@dpg-...:5432/cloud_qr_db`) and copy it.
+### 2. User Dashboard (`/dashboard`)
+Displays real-time database queries:
+- **Total Saved QRs**
+- **Generated Today** (since midnight UTC)
+- **URL Codes**
+- **Other Formats** (Email, Phone, Text)
+- Embedded Quick Generator and Recent Cloud QR table with instant actions.
 
-### Step 3: Create Web Service on Render
-1. In Render Dashboard, click **New +** → **Web Service**.
-2. Connect your GitHub repository `cloud-qr-generator`.
-3. Configure the settings:
-   - **Name:** `cloud-qr-generator`
-   - **Language / Runtime:** `Python 3`
-   - **Branch:** `main`
-   - **Region:** Same region as your PostgreSQL instance!
-   - **Build Command:** `pip install -r requirements.txt && flask --app app db upgrade`
-   - **Start Command:** `gunicorn app:app`
-   - **Instance Type:** `Free`
+### 3. Dedicated Generator Studio (`/generate`)
+A focused workspace featuring payload tabs (URL, Text, Email, Phone), title input, real-time color pickers with hex sync, preset color dots, live render preview, and instant download.
 
-### Step 4: Configure Environment Variables
-Under the **Environment** tab of your Render Web Service, add two variables:
+### 4. Paginated QR History (`/history`)
+Portfolio of generated codes with server-side pagination, search input, type filter dropdown, sorting options, safe modal preview trigger, and deletion with atomic database rollback.
 
-| Key | Value | Purpose |
-| :--- | :--- | :--- |
-| `SECRET_KEY` | *(A long random hex string)* | Signs session cookies and CSRF tokens |
-| `DATABASE_URL` | *(Paste Internal Database URL from Step 2)* | Connects Flask to Render PostgreSQL |
-
-*(To generate a secure 64-character secret key locally, run `python -c "import secrets; print(secrets.token_hex(32))"`).*
-
-### Step 5: Deploy and Verify
-1. Click **Create Web Service**.
-2. Render builds the environment, installs packages, runs database migrations, and binds Gunicorn to the production port.
-3. Access your live application at:
-   `https://cloud-qr-generator.onrender.com`
-
----
-
-## 🔌 REST API Reference
-
-| Method | Endpoint | Auth Required | Description | Request Body / Params |
-| :--- | :--- | :---: | :--- | :--- |
-| `GET` | `/` | No | Public landing page with live sandbox | None |
-| `GET` | `/register` | No | Registration page | None |
-| `POST` | `/register` | No | Creates new user account | `username`, `email`, `password`, `confirm_password` |
-| `GET` | `/login` | No | Login page | None |
-| `POST` | `/login` | No | Authenticates user session (10 req/min limit) | `email`, `password`, `remember` |
-| `POST` | `/logout` | **Yes** | Terminates session (CSRF protected) | None |
-| `GET` | `/dashboard` | **Yes** | User metrics, fast generator, recent list | None |
-| `GET` | `/history` | **Yes** | Server-paginated QR portfolio | Query: `?type=url&q=search&sort=newest&page=1&per_page=9` |
-| `POST` | `/api/generate` | **Yes** | Generates QR, persists to DB, streams PNG | `{ "title", "qr_type", "content", "foreground", "background" }` |
-| `POST` | `/api/preview` | No | Public instant preview (20 req/min limit) | `{ "content", "qr_type", "foreground", "background" }` |
-| `GET` | `/api/qr/<id>/image` | **Yes** | Dynamically regenerates stored QR PNG | None |
-| `GET` | `/api/qr/<id>/download`| **Yes** | Downloads QR PNG with custom filename | None |
-| `DELETE`| `/api/qr/<id>` | **Yes** | Deletes user's QR record from cloud DB | None |
-
----
-
-## 🎓 Viva / Academic Project Defense Q&A
-
-### 1. What makes this project a "Cloud" application rather than just a local Python script?
-> **Answer:** A local Python script generates an image on a local hard drive. This application is deployed on cloud infrastructure (Render), accepts requests over HTTPS, uses stateless server instances (Gunicorn/Flask), and stores relational data in a managed cloud database (Render PostgreSQL). Even if the server container is destroyed or redeployed, user accounts and QR records remain permanently accessible from any device.
-
-### 2. Why did you choose PostgreSQL over SQLite for production?
-> **Answer:** SQLite stores data in a single local file. On cloud container platforms like Render, the container filesystem is ephemeral; files written during execution are wiped whenever the service redeploys, scales, or sleeps. PostgreSQL is an independent, managed cloud service providing persistent, scalable, relational ACID storage that survives deployments.
-
-### 3. Why don't you save the generated PNG files to disk or AWS S3?
-> **Answer:** Storing raw images creates unnecessary storage costs, maintenance overhead, and filesystem dependency. Because a QR code is entirely deterministic based on its content, error-correction level, and color values, storing a lightweight text row in PostgreSQL (~100 bytes) and dynamically rendering the image in memory takes under 5 milliseconds. This eliminates file storage costs entirely while maintaining high performance.
-
-### 4. How does the application handle multi-tenant isolation and security?
-> **Answer:** 
-> - **Authentication:** User passwords are never stored in plaintext; they are hashed using Werkzeug's PBKDF2 with SHA-256 and unique salts.
-> - **Authorization:** Every database retrieval and deletion query filters strictly by both `id` and `user_id = current_user.id`. User B cannot view, regenerate, or delete User A's QR code.
-> - **CSRF Protection:** State-changing requests (form submits, asynchronous POST and DELETE requests) require valid CSRF tokens verified by `Flask-WTF`.
-> - **Input Validation:** Content length is capped at 2,048 characters, phone numbers and URLs are regex-validated, and foreground/background hex codes are checked to prevent unreadable codes.
-
-### 5. What happens during Render's database URL handling?
-> **Answer:** Render provides PostgreSQL connection URLs starting with `postgres://`. However, SQLAlchemy 1.4+ deprecated `postgres://` in favor of `postgresql://`. The `config.py` module automatically transforms `postgres://` to `postgresql://` before initializing the database engine, ensuring seamless deployment without manual string editing.
+### 5. User Profile & Account Settings (`/profile`)
+Tenant information card displaying Username, Email, Registration Date, Account ID, and Cloud Database tier, alongside a secure password modification form.
 
 ---
 

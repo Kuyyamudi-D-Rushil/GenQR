@@ -54,3 +54,15 @@ def test_rate_limit_preview_behavior():
     last_resp = client.post("/api/preview", json={"content": "https://example.com"})
     assert last_resp.status_code == 429
     assert "rate limit" in last_resp.get_json()["error"].lower()
+
+
+def test_health_check_endpoint(client):
+    """Verify cloud container health check probes application and database status."""
+    response = client.get("/healthz")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["status"] == "healthy"
+    assert data["database"] == "connected"
+    assert data["service"] == "cloud-qr-generator"
+    assert "timestamp" in data
+

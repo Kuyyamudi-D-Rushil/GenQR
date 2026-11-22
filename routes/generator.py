@@ -2,7 +2,7 @@ import io
 import re
 import urllib.parse
 import qrcode
-from flask import Blueprint, request, jsonify, send_file, url_for, current_app
+from flask import Blueprint, request, jsonify, send_file, url_for, current_app, render_template
 from flask_login import login_required, current_user
 from email_validator import validate_email, EmailNotValidError
 from sqlalchemy.exc import SQLAlchemyError
@@ -147,6 +147,13 @@ def create_qr(payload: str, foreground: str, background: str):
         raise QRCapacityError("Content exceeds QR code data capacity.") from e
     except Exception as e:
         raise QRCapacityError(f"Failed to generate QR code: {str(e)}") from e
+
+
+@generator_bp.route("/generate", methods=["GET"])
+@login_required
+def generate_page():
+    """Dedicated standalone QR Code Generator studio page."""
+    return render_template("generator.html")
 
 
 @generator_bp.route("/api/generate", methods=["POST"])

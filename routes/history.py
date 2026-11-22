@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from flask import Blueprint, render_template, request, jsonify, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import or_
@@ -21,6 +22,14 @@ def dashboard():
     email_count = QRCode.query.filter_by(user_id=user_id, qr_type="email").count()
     phone_count = QRCode.query.filter_by(user_id=user_id, qr_type="phone").count()
 
+    # Time-windowed query: QR codes generated today (since midnight UTC)
+    now_utc = datetime.now(timezone.utc)
+    today_start = datetime(now_utc.year, now_utc.month, now_utc.day, tzinfo=timezone.utc)
+    today_count = QRCode.query.filter(
+        QRCode.user_id == user_id,
+        QRCode.created_at >= today_start
+    ).count()
+
     # Most recent 6 QR codes with deterministic secondary sort
     recent_qrs = QRCode.query.filter_by(user_id=user_id).order_by(
         QRCode.created_at.desc(),
@@ -29,6 +38,7 @@ def dashboard():
 
     stats = {
         "total": total_qrs,
+        "today": today_count,
         "url": url_count,
         "text": text_count,
         "email": email_count,

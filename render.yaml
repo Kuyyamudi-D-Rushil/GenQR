@@ -1,0 +1,32 @@
+services:
+  # Python Web Service running Flask + Gunicorn on Render
+  - type: web
+    name: cloud-qr-generator
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r requirements.txt && flask db upgrade"
+    startCommand: "gunicorn app:app"
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_DEBUG
+        value: "0"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cloud-qr-db
+          property: connectionString
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+
+databases:
+  # Managed Cloud PostgreSQL Instance on Render
+  - name: cloud-qr-db
+    databaseName: cloud_qr_db
+    user: cloud_qr_user
+    region: oregon
+    plan: free

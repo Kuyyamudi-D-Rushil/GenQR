@@ -280,3 +280,106 @@ def test_public_preview_endpoint(client):
     })
     assert response.status_code == 200
     assert response.mimetype == "image/png"
+
+
+def decode_qr_png_bytes(png_bytes: bytes) -> str:
+    """Decode raw PNG image bytes using OpenCV QRCodeDetector."""
+    import cv2
+    import numpy as np
+
+    arr = np.frombuffer(png_bytes, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    assert img is not None, "Failed to decode PNG image buffer with OpenCV"
+    detector = cv2.QRCodeDetector()
+    decoded_value, _, _ = detector.detectAndDecode(img)
+    return decoded_value
+
+
+def test_qr_decoding_verification_url(auth_client):
+    """Verify generated URL QR code contains valid 2D matrix modules matching source URL."""
+    client, _ = auth_client
+    target_url = "https://example.com/cloud-computing-project"
+
+    resp = client.post("/api/generate", json={
+        "title": "Decoded URL Test",
+        "qr_type": "url",
+        "content": target_url,
+        "foreground": "#000000",
+        "background": "#FFFFFF"
+    })
+    assert resp.status_code == 200
+    assert resp.mimetype == "image/png"
+
+    decoded_text = decode_qr_png_bytes(resp.data)
+    assert decoded_text == target_url
+
+
+def test_qr_decoding_verification_text(auth_client):
+    """Verify generated plain text QR code decodes back to original string."""
+    client, _ = auth_client
+    raw_text = "Cloud-Native QR Matrix Verification 2026"
+
+    resp = client.post("/api/generate", json={
+        "title": "Decoded Text Test",
+        "qr_type": "text",
+        "content": raw_text,
+        "foreground": "#059669",
+        "background": "#FFFFFF"
+    })
+    assert resp.status_code == 200
+
+    decoded_text = decode_qr_png_bytes(resp.data)
+    assert decoded_text == raw_text
+
+
+def test_qr_decoding_verification_email(auth_client):
+    """Verify generated email QR code decodes to normalized mailto scheme."""
+    client, _ = auth_client
+
+    resp = client.post("/api/generate", json={
+        "title": "Decoded Email Test",
+        "qr_type": "email",
+        "content": "contact@organization.org",
+        "foreground": "#4F46E5",
+        "background": "#FFFFFF"
+    })
+    assert resp.status_code == 200
+
+    decoded_text = decode_qr_png_bytes(resp.data)
+    assert decoded_text == "mailto:contact@organization.org"
+
+
+def test_qr_decoding_verification_phone(auth_client):
+    """Verify generated phone QR code decodes to normalized tel scheme."""
+    client, _ = auth_client
+
+    resp = client.post("/api/generate", json={
+        "title": "Decoded Phone Test",
+        "qr_type": "phone",
+        "content": "+1 (555) 867-5309",
+        "foreground": "#DC2626",
+        "background": "#FFFFFF"
+    })
+    assert resp.status_code == 200
+
+    decoded_text = decode_qr_png_bytes(resp.data)
+    assert decoded_text == "tel:+15558675309"
+
+
+def test_generator_page_access(auth_client):
+    """Verify access controls on the dedicated /generate studio page."""
+    auth_c, _ = auth_client
+
+    # Authenticated user can open generator studio
+    auth_resp = auth_c.get("/generate")
+    assert auth_resp.status_code == 200
+    assert b"QR Code Generation Studio" in auth_resp.data
+    assert b"Configure QR Parameters" in auth_resp.data
+
+    # Log out and verify unauthenticated user redirected to login
+    auth_c.post("/logout", follow_redirects=True)
+    unauth_resp = auth_c.get("/generate")
+    assert unauth_resp.status_code == 302
+    assert "/login" in unauth_resp.headers["Location"]
+
+

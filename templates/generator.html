@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}QR Code Generator Studio | CloudQR{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header with Breadcrumbs & Action -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+        <div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+                <a href="{{ url_for('history.dashboard') }}" class="text-secondary text-decoration-none small">
+                    <i class="bi bi-arrow-left me-1"></i> Dashboard
+                </a>
+                <span class="text-secondary small">/</span>
+                <span class="text-white small fw-semibold">Generator Studio</span>
+            </div>
+            <h2 class="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+                QR Code Generation Studio
+                <span class="badge bg-primary-subtle text-primary fs-xs rounded-pill">Cloud Persistence</span>
+            </h2>
+        </div>
+        <div>
+            <a href="{{ url_for('history.history') }}" class="btn btn-outline-light rounded-pill px-4">
+                <i class="bi bi-collection me-1"></i> View Saved History
+            </a>
+        </div>
+    </div>
+
+    <!-- Generator & Preview Studio Grid -->
+    <div class="row g-4 mb-5">
+        <!-- Generator Form (Left Column) -->
+        <div class="col-lg-7">
+            <div class="card glass-card border-secondary-subtle shadow-lg p-4 h-100">
+                <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-secondary-subtle mb-3">
+                    <h5 class="fw-bold text-white mb-0">
+                        <i class="bi bi-sliders text-primary me-2"></i>Configure QR Parameters
+                    </h5>
+                    <span class="badge bg-success-subtle text-success rounded-pill">PostgreSQL Backed</span>
+                </div>
+
+                <form id="dashboardGenerateForm">
+                    <!-- Title Input -->
+                    <div class="mb-3">
+                        <label for="qrTitle" class="form-label text-muted small fw-semibold">QR TITLE / LABEL</label>
+                        <input type="text" class="form-control bg-dark-subtle border-secondary-subtle text-white" id="qrTitle" placeholder="e.g. Corporate Website" value="My Project Link" maxlength="150" required>
+                    </div>
+
+                    <!-- QR Type Selector -->
+                    <div class="mb-3">
+                        <label class="form-label text-muted small fw-semibold">PAYLOAD TYPE</label>
+                        <div class="row g-2">
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypeUrl" value="url" checked>
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypeUrl">
+                                    <i class="bi bi-link-45deg fs-5"></i>
+                                    <span class="fs-xs">URL</span>
+                                </label>
+                            </div>
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypeText" value="text">
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypeText">
+                                    <i class="bi bi-card-text fs-5"></i>
+                                    <span class="fs-xs">Text</span>
+                                </label>
+                            </div>
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypeEmail" value="email">
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypeEmail">
+                                    <i class="bi bi-envelope fs-5"></i>
+                                    <span class="fs-xs">Email</span>
+                                </label>
+                            </div>
+                            <div class="col-3">
+                                <input type="radio" class="btn-check" name="qrType" id="qrTypePhone" value="phone">
+                                <label class="btn btn-outline-secondary w-100 py-2 d-flex flex-column align-items-center gap-1" for="qrTypePhone">
+                                    <i class="bi bi-telephone fs-5"></i>
+                                    <span class="fs-xs">Phone</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Content Input -->
+                    <div class="mb-3">
+                        <label for="qrContent" class="form-label text-muted small fw-semibold" id="qrContentLabel">TARGET WEB URL</label>
+                        <textarea class="form-control bg-dark-subtle border-secondary-subtle text-white font-monospace" id="qrContent" rows="3" placeholder="https://yourdomain.com" required>https://example.com</textarea>
+                        <div class="form-text text-muted fs-xs" id="qrContentHelper">Destination website link. Include a valid domain (e.g. https://example.com).</div>
+                    </div>
+
+                    <!-- Color Customization & Presets -->
+                    <div class="mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <label class="form-label text-muted small fw-semibold mb-0">COLOR PALETTE & CONTRAST</label>
+                            <!-- Presets -->
+                            <div class="d-flex gap-1" id="palettePresets">
+                                <button type="button" class="btn-preset-dot" data-fg="#000000" data-bg="#FFFFFF" title="Classic Black & White" style="background: linear-gradient(135deg, #000 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#4F46E5" data-bg="#FFFFFF" title="Indigo Tech" style="background: linear-gradient(135deg, #4f46e5 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#059669" data-bg="#FFFFFF" title="Emerald Green" style="background: linear-gradient(135deg, #059669 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#DC2626" data-bg="#FFFFFF" title="Ruby Red" style="background: linear-gradient(135deg, #dc2626 50%, #fff 50%);"></button>
+                                <button type="button" class="btn-preset-dot" data-fg="#7C3AED" data-bg="#FAF5FF" title="Royal Violet" style="background: linear-gradient(135deg, #7c3aed 50%, #faf5ff 50%);"></button>
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="text-secondary fs-xs">Foreground (QR Modules)</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color border-0 p-1 bg-transparent cursor-pointer" id="qrForeground" value="#000000">
+                                    <input type="text" class="form-control form-control-sm bg-dark-subtle border-secondary-subtle text-white font-monospace text-uppercase" id="qrForegroundHex" value="#000000" maxlength="7">
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="text-secondary fs-xs">Background</label>
+                                <div class="input-group">
+                                    <input type="color" class="form-control form-control-color border-0 p-1 bg-transparent cursor-pointer" id="qrBackground" value="#FFFFFF">
+                                    <input type="text" class="form-control form-control-sm bg-dark-subtle border-secondary-subtle text-white font-monospace text-uppercase" id="qrBackgroundHex" value="#FFFFFF" maxlength="7">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button type="submit" class="btn btn-primary w-100 rounded-pill py-2 fw-semibold shadow-sm" id="generateSubmitBtn">
+                        <i class="bi bi-cloud-arrow-up me-1"></i> Generate & Save to PostgreSQL
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Live Preview Box (Right Column) -->
+        <div class="col-lg-5">
+            <div class="card glass-card border-secondary-subtle shadow-lg p-4 h-100 d-flex flex-column text-center">
+                <div class="d-flex align-items-center justify-content-between pb-3 border-bottom border-secondary-subtle mb-3">
+                    <span class="fw-bold text-white">Live Render Preview</span>
+                    <span class="badge bg-primary-subtle text-primary rounded-pill" id="previewStatusBadge">Ready</span>
+                </div>
+
+                <div class="flex-grow-1 d-flex flex-column align-items-center justify-content-center p-4 bg-dark rounded-3 border border-secondary-subtle mb-3 position-relative">
+                    <div id="renderSpinner" class="spinner-border text-primary d-none my-5" role="status">
+                        <span class="visually-hidden">Rendering QR...</span>
+                    </div>
+                    <img id="qrPreview" src="" alt="Generated QR Preview" class="img-fluid rounded shadow-sm max-h-260 d-none">
+                    <div id="previewEmptyPlaceholder" class="text-secondary">
+                        <i class="bi bi-qr-code fs-1 opacity-50 mb-2"></i>
+                        <p class="small mb-0">Fill in details and click Generate</p>
+                    </div>
+                </div>
+
+                <!-- Preview Info -->
+                <div class="text-start mb-3 px-1">
+                    <div class="fw-semibold text-white text-truncate" id="previewTitleDisplay">My Project Link</div>
+                    <div class="text-secondary fs-xs text-truncate font-monospace" id="previewContentDisplay">https://example.com</div>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill fs-xs">Error Correction: M (15%)</span>
+                        <span class="badge bg-secondary-subtle text-secondary rounded-pill fs-xs">Format: PNG</span>
+                    </div>
+                </div>
+
+                <!-- Download & Actions -->
+                <div class="d-flex gap-2">
+                    <a id="downloadBtn" href="#" download="qr_code.png" class="btn btn-success flex-grow-1 rounded-pill fw-semibold disabled">
+                        <i class="bi bi-download me-1"></i> Download PNG
+                    </a>
+                    <button type="button" class="btn btn-outline-light rounded-pill px-3" id="copyContentBtn" title="Copy Content">
+                        <i class="bi bi-clipboard"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    initDashboard();
+});
+</script>
+{% endblock %}
