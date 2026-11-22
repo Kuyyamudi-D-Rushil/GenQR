@@ -119,7 +119,9 @@ def create_app(config_class=Config):
 app = create_app()
 
 if __name__ == "__main__":
+    port = int(os.getenv("PORT", "5000"))
+    debug = os.getenv("FLASK_DEBUG", "0").lower() in ("1", "true", "yes")
     with app.app_context():
         # Auto-create tables for local development
         db.create_all()
-    app.run(debug=True, host="127.0.0.1", port=5000)
+    app.run(debug=debug, host="0.0.0.0", port=port)
